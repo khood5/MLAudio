@@ -1,0 +1,21 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Make Background Audio",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/data/makeBackgroundAudio.py",
+            "args": [
+                "${workspaceFolder}/data/urbanIndex.csv",
+                "3",
+                "${workspaceFolder}/data/background"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
