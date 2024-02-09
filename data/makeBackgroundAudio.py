@@ -1,13 +1,10 @@
-import numpy as np
-import pandas as pd
 from pydub import AudioSegment
 import random
 import argparse
 import csv
 from tqdm import tqdm
-import threading
 import uuid
-from multiprocessing import Process, Manager
+from multiprocessing import Process
 
 def makeBackgroundAudio(audioBits, outputPath, length=60):
     BackgroundAudio = AudioSegment.empty()

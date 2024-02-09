@@ -16,6 +16,19 @@
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Make Gunshot Audio",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/data/makeGunshotAudio.py",
+            "args": [
+                "${workspaceFolder}/data/backgound.24030.index.csv",
+                "${workspaceFolder}/data/gunshotAudioIndex.csv",
+                "${workspaceFolder}/data/background"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
