@@ -169,3 +169,5 @@ data/UrbanSound8K.tar.gz
 data/backgound/**/* 
 data/backgound_test_files/background_22da9d56-71d3-4c13-ab07-b97e7d12e035.wav
 data/backgound.24030/**/*
+data/gunshot/**/*
+data/gunshots_src/**/*
