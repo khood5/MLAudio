@@ -60,22 +60,6 @@ def main():
                 process.join()
             pbar.update(numProcesses)
             remainingSamples = remainingSamples - numProcesses
-    # with tqdm(total=args.number_of_samples_to_make) as pbar:
-    #     while remainingSamples > 0: 
-    #     # in tqdm(range(args.number_of_samples_to_make)):
-    #         num_threads = args.num_threads if (remainingSamples - args.num_threads) > 0 else remainingSamples
-    #         threads = []
-    #         for i in range(num_threads):
-    #             # use uuid.uuid4() to make a random UUID so file names dont collided 
-    #             outputFileNames.append(f"{args.output_directory}/background_{uuid.uuid4()}.wav")
-    #             thread = threading.Thread(target=makeBackgroundAudio, args=(backgoundSoundBytes, outputFileNames[-1], args.length,))
-    #             threads.append(thread)
-    #             thread.start()
-    #         # makeBackgroundAudio(backgoundSoundBytes, args.length).export(f"{args.output_directory}/background{i}.wav", format="wav", codec="pcm_s32le")
-    #         for thread in threads:
-    #             thread.join()
-    #         pbar.update(num_threads)
-    #         remainingSamples = remainingSamples - num_threads
     file = open('backgroundIndex.csv', 'w+', newline ='')
     with file:    
         write = csv.writer(file)
