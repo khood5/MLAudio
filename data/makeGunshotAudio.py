@@ -23,9 +23,9 @@ def main():
 
     parser.add_argument('background_index', type=str, help='Path to the index file (csv file with list of paths to background sound files)')
     parser.add_argument('gunshot_index', type=str, help='Path to the index file (csv file with list of paths to gunshot sound files)')
+    parser.add_argument('output_directory', type=str, help='Path to the output directory')
     parser.add_argument('-n', '--number_of_samples_to_make', default=-1, type=int, help='Number of samples to generate (max equal to the number of background files) default= all files in background_index')
     parser.add_argument('-p', '--num_processes', nargs='?', default=2, type=int, help='number of processes to use default=2')
-    parser.add_argument('output_directory', type=str, help='Path to the output directory')
     args = parser.parse_args()
 
     gunshotIndex = []
@@ -47,7 +47,7 @@ def main():
         sys.exit(1)  # abort because of error
 
     for i in range(number_of_samples_to_make):
-        makeGunshotAudio(gunshotIndex, backgroundIndex[i], "/data/khood/GitHub/MLAudio/data/output.mp3")
+        makeGunshotAudio(gunshotIndex, backgroundIndex[i], args.output_directory)
 
 if __name__ == "__main__":
     main()
