@@ -14,7 +14,7 @@ def makeGunshotAudio(sampleGunshotAudio, backgroundAudio, outputPath, sharedRows
     gunshotPath = random.sample(sampleGunshotAudio, 1)[0]
     gunshot = AudioSegment.from_file(gunshotPath, format="wav")
     # Not all gunshots are well-edited; some are very long due to excessive/unnecessary recording.
-    while (gunshot.duration_seconds < BackgroundAudio.duration_seconds):
+    while (gunshot.duration_seconds > BackgroundAudio.duration_seconds):
         sampleGunshotAudio.remove(gunshotPath)
         gunshotPath = random.sample(sampleGunshotAudio, 1)[0]
         gunshot = AudioSegment.from_file(gunshotPath, format="wav")
@@ -26,6 +26,8 @@ def makeGunshotAudio(sampleGunshotAudio, backgroundAudio, outputPath, sharedRows
         print(f"gunshot file {gunshotPath}")
         print(f"Caught an error: {e}")
     except Exception as e:
+        print(f"backgound file {backgroundAudio[index]}")
+        print(f"gunshot file {gunshotPath}")
         print(f"An unexpected error occurred: {e}")
     GunshotAudio.export(outputPath, format="wav", codec="pcm_s32le").close()
     sharedRows[index] = [str(outputPath), str(gunshotInjectionPoint), backgroundAudio[index], gunshotPath]

@@ -12,7 +12,13 @@ def makeBackgroundAudio(audioBits, outputPath, length=60):
     while BackgroundAudio.duration_seconds < length:
         path = samples[0]
         randomBit = AudioSegment.from_file(path, format="wav", codec="pcm_s32le")
-        BackgroundAudio = BackgroundAudio + randomBit
+        try:
+            BackgroundAudio = BackgroundAudio + randomBit
+        except Exception as e:
+            print(f"cant add audio file {path}")
+            print(f"An unexpected error occurred: {e}")
+
+        
         samples = samples[1:]
     BackgroundAudio = BackgroundAudio[:60 * 1000] # convert milliseconds to seconds
     BackgroundAudio.export(outputPath, format="wav", codec="pcm_s32le").close
