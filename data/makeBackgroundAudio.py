@@ -15,7 +15,7 @@ def makeBackgroundAudio(audioBits, outputPath, length=60):
         BackgroundAudio = BackgroundAudio + randomBit
         samples = samples[1:]
     BackgroundAudio = BackgroundAudio[:60 * 1000] # convert milliseconds to seconds
-    BackgroundAudio.export(outputPath, format="wav", codec="pcm_s32le")
+    BackgroundAudio.export(outputPath, format="wav", codec="pcm_s32le").close
 
 def main():
     parser = argparse.ArgumentParser(description='Generate background audio from the UrbanSound8k dataset.')
@@ -45,7 +45,7 @@ def main():
     with tqdm(total=args.number_of_samples_to_make) as pbar:
         remainingSamples = args.number_of_samples_to_make
         while remainingSamples > 0:
-            numProcesses = args.num_processes if (remainingSamples - args.num_processes) > 0 else remainingSamples
+            numProcesses = min(args.num_processes, remainingSamples)
             processList = []
             for _ in range(numProcesses):
                     # use uuid.uuid4() to make a random UUID so file names dont collided 

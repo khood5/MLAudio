@@ -23,9 +23,11 @@
             "request": "launch",
             "program": "${workspaceFolder}/data/makeGunshotAudio.py",
             "args": [
-                "${workspaceFolder}/data/backgound.24030.index.csv",
-                "${workspaceFolder}/data/gunshotAudioIndex.csv",
-                "${workspaceFolder}/data/background"
+                "${workspaceFolder}/data/backgroundIndex.csv",
+                "${workspaceFolder}/data/gunshotSrcIndex.csv",
+                "${workspaceFolder}/data/tmp",
+                "-n",
+                "1"
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
