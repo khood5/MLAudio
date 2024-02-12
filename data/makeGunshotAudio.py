@@ -1,4 +1,5 @@
 from pydub import AudioSegment
+from pydub.exceptions import TooManyMissingFrames
 import random
 import argparse
 import csv
@@ -12,10 +13,20 @@ def makeGunshotAudio(sampleGunshotAudio, backgroundAudio, outputPath, sharedRows
     BackgroundAudio = AudioSegment.from_file(backgroundAudio[index], format="wav")
     gunshotPath = random.sample(sampleGunshotAudio, 1)[0]
     gunshot = AudioSegment.from_file(gunshotPath, format="wav")
-
+    # Not all gunshots are well-edited; some are very long due to excessive/unnecessary recording.
+    while (gunshot.duration_seconds < BackgroundAudio.duration_seconds):
+        sampleGunshotAudio.remove(gunshotPath)
+        gunshotPath = random.sample(sampleGunshotAudio, 1)[0]
+        gunshot = AudioSegment.from_file(gunshotPath, format="wav")
     gunshotInjectionPoint = random.uniform(1, BackgroundAudio.duration_seconds - gunshot.duration_seconds)
-    GunshotAudio = BackgroundAudio.overlay(gunshot, position=gunshotInjectionPoint*1000) # times 1000 to convert from mili to secs
-
+    try:
+        GunshotAudio = BackgroundAudio.overlay(gunshot, position=gunshotInjectionPoint*1000) # times 1000 to convert from mili to secs
+    except TooManyMissingFrames as e:
+        print(f"backgound file {backgroundAudio[index]}")
+        print(f"gunshot file {gunshotPath}")
+        print(f"Caught an error: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
     GunshotAudio.export(outputPath, format="wav", codec="pcm_s32le").close()
     sharedRows[index] = [str(outputPath), str(gunshotInjectionPoint), backgroundAudio[index], gunshotPath]
 
