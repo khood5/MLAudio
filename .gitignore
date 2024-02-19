@@ -162,7 +162,7 @@ cython_debug/
 # data files
 data/Raw/**/*
 data/gunshots/**/*
-
+*.back
 **/.DS_Store
 data/UrbanSound8K/**/*
 data/UrbanSound8K.tar.gz
@@ -177,3 +177,7 @@ data/gunshot_background/**/*
 data/gunshotAudioDataset/**/*
 data/backgound_test_files/**/*
 data/background/**/*
+data/gunshot_background.back/**/*
+dataset/**/*
+ziFBmcf1
+dataset.old/**/*
