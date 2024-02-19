@@ -6,9 +6,9 @@ from tqdm import tqdm
 import uuid
 from multiprocessing import Process
 
-def makeBackgroundAudio(audioBits, outputPath, length=60):
+def makeBackgroundAudio(audioBits, outputPath, length=60, sample_rate=96000, random_sample_size=1200):
     BackgroundAudio = AudioSegment.empty()
-    samples = random.sample(audioBits, 1200) # shortest clip is 0.05secs so a sample of 1200 guarantees at least 60secs of audio
+    samples = random.sample(audioBits, random_sample_size) # shortest clip is 0.05secs so a sample of 1200 guarantees at least 60secs of audio
     while BackgroundAudio.duration_seconds < length:
         path = samples[0]
         randomBit = AudioSegment.from_file(path, format="wav", codec="pcm_s32le")
@@ -20,7 +20,8 @@ def makeBackgroundAudio(audioBits, outputPath, length=60):
 
         
         samples = samples[1:]
-    BackgroundAudio = BackgroundAudio[:60 * 1000] # convert milliseconds to seconds
+    BackgroundAudio = BackgroundAudio[:length * 1000] # convert milliseconds to seconds
+    BackgroundAudio = BackgroundAudio.set_frame_rate(sample_rate) # fix sample rate 
     BackgroundAudio.export(outputPath, format="wav", codec="pcm_s32le").close
 
 def main():
@@ -31,6 +32,7 @@ def main():
     parser.add_argument('number_of_samples_to_make', type=int, help='Number of samples to generate')
     parser.add_argument('-l', '--length', nargs='?', default=60, type=int, help='length of each sample default=60')
     parser.add_argument('-p', '--num_processes', nargs='?', default=2, type=int, help='number of processes to use default=2')
+    parser.add_argument('-sr', '--sample_rate', nargs='?', default=96000, type=int, help='sample_rate of audio files default=96000')
     parser.add_argument('output_directory', type=str, help='Path to the output directory')
     args = parser.parse_args()
     
@@ -42,7 +44,7 @@ def main():
         for row in backgoundSoundBytesIndexFile:
             backgoundSoundBytes.append(row[0])
 
-    print(f"Making {args.length} sec long background samples")
+    print(f"Making {args.length} sec long background samples as ")
     print(f"Making {args.number_of_samples_to_make} total smaples")
     print(f"Putting samples in {args.output_directory}")
     remainingSamples = args.number_of_samples_to_make
@@ -56,7 +58,11 @@ def main():
             for _ in range(numProcesses):
                     # use uuid.uuid4() to make a random UUID so file names dont collided 
                     outputFileNames.append(f"{args.output_directory}/background_{uuid.uuid4()}.wav")
-                    process = Process(target=makeBackgroundAudio, args=(backgoundSoundBytes, outputFileNames[-1], args.length,))
+                    process = Process(target=makeBackgroundAudio, args=(backgoundSoundBytes, 
+                                                                        outputFileNames[-1], 
+                                                                        args.length), 
+                                                                        kwargs={'sample_rate': args.sample_rate}
+                    )
                     processList.append(process)
                     process.start()
             for process in processList:

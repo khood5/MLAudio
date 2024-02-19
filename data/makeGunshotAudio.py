@@ -9,7 +9,7 @@ from multiprocessing import Process, Manager
 import argparse
 import sys
 
-def makeGunshotAudio(sampleGunshotAudio, backgroundAudio, outputPath, sharedRows, index):
+def makeGunshotAudio(sampleGunshotAudio, backgroundAudio, outputPath, sharedRows, index, sample_rate=96000):
     BackgroundAudio = AudioSegment.from_file(backgroundAudio[index], format="wav")
     gunshotPath = random.sample(sampleGunshotAudio, 1)[0]
     gunshot = AudioSegment.from_file(gunshotPath, format="wav")
@@ -29,6 +29,7 @@ def makeGunshotAudio(sampleGunshotAudio, backgroundAudio, outputPath, sharedRows
         print(f"backgound file {backgroundAudio[index]}")
         print(f"gunshot file {gunshotPath}")
         print(f"An unexpected error occurred: {e}")
+    GunshotAudio= GunshotAudio.set_frame_rate(sample_rate) # fix sample rate 
     GunshotAudio.export(outputPath, format="wav", codec="pcm_s32le").close()
     sharedRows[index] = [str(outputPath), str(gunshotInjectionPoint), backgroundAudio[index], gunshotPath]
 
@@ -41,6 +42,7 @@ def main():
     parser.add_argument('output_directory', type=str, help='Path to the output directory')
     parser.add_argument('-n', '--number_of_samples_to_make', default=-1, type=int, help='Number of samples to generate (max equal to the number of background files) default= all files in background_index')
     parser.add_argument('-p', '--num_processes', nargs='?', default=2, type=int, help='number of processes to use default=2')
+    parser.add_argument('-sr', '--sample_rate', nargs='?', default=96000, type=int, help='sample_rate of audio files default=96000')
     args = parser.parse_args()
 
     gunshotSamples = []
@@ -77,7 +79,9 @@ def main():
                                                                  f"{args.output_directory}/gunshot_{uuid.uuid4()}.wav",
                                                                  gunshotWithBackgroundIndexRows, 
                                                                  index
-                                                                 )
+                                                                 ),
+                                                                 kwargs={'sample_rate': args.sample_rate}
+
                 )
                 processList.append(process)
                 process.start()

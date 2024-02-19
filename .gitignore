@@ -174,3 +174,6 @@ data/gunshots_src/**/*
 data/backgound.back/**/*
 data/gunshots_background/**/*
 data/gunshot_background/**/*
+data/gunshotAudioDataset/**/*
+data/backgound_test_files/**/*
+data/background/**/*
