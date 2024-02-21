@@ -47,7 +47,7 @@ def main():
     for epoch in range(args.epoch):
         print(f"Epoch {epoch}")
         resnet18.train()
-        with tqdm(train_loader, unit="batch", ncols=50) as tepoch:
+        with tqdm(train_loader, unit="batch", ncols=128) as tepoch:
             for inputs, labels in train_loader:
                 inputs, labels = torch.unsqueeze(inputs, 1).to(device), torch.unsqueeze(labels, 1).type(torch.float32).to(device)
                 optimizer.zero_grad()
