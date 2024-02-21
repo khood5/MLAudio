@@ -32,24 +32,22 @@ def main():
     resnet18.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False) # change input layer to greyscale (for the spectrogram )
     loss_function = nn.BCELoss()
     optimizer = optim.SGD(resnet18.parameters(), lr=0.1, weight_decay=0.0001, momentum=0.9)
-    num_epochs = 2
     resnet18.to(device)
     print(f"Model succsefuly made and loaded to {device}")
 
-    batch_size = 15
     train_data = audioDataloader(index_file=args.train_dataset)
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
     print(f"Loaded training dataset from {args.train_dataset}")
     valid_data = audioDataloader(index_file=args.valid_dataset)
-    valid_loader = torch.utils.data.DataLoader(valid_data, batch_size=batch_size, shuffle=True)
+    valid_loader = torch.utils.data.DataLoader(valid_data, batch_size=args.batch_size, shuffle=True)
     print(f"Loaded validation dataset from {args.valid_dataset}")
     
     losses = []
     accuracies = []
-    for epoch in range(num_epochs):
+    for epoch in range(args.epoch):
         print(f"Epoch {epoch}")
         resnet18.train()
-        with tqdm(train_loader, unit="batch") as tepoch:
+        with tqdm(train_loader, unit="batch", ncols=50) as tepoch:
             for inputs, labels in train_loader:
                 inputs, labels = torch.unsqueeze(inputs, 1).to(device), torch.unsqueeze(labels, 1).type(torch.float32).to(device)
                 optimizer.zero_grad()
@@ -62,34 +60,26 @@ def main():
                 correct = (predicted == labels).sum().item()
                 losses.append(loss.item())
                 accuracy = correct / total
-                accuracies.append(accuracy)
+                accuracies.append(100. * accuracy)
                 tepoch.set_postfix(loss=loss.item(), accuracy=100. * accuracy)
-            if losses and losses[-1] < losses[-2]:
-                torch.save(resnet18.state_dict(), args.output_file)
-                print(f"Successfully saved model to {args.valid_dataset}")
-                print(f"loss decressed from {losses[-2]} to {losses[-1]}")
-    
-    file = open('train_losses.csv', 'w', newline ='')
+                if len(losses) > 1 and losses[-1] < losses[-2]:
+                        torch.save(resnet18.state_dict(), args.output_file)
+    file = open('train.csv', 'w', newline ='')
     with file:    
         write = csv.writer(file)
-        write.writerows(losses)
-    print(f"Successfully saved losses to train_losses.csv")
-    
-    file = open('train_accuracies.csv', 'w', newline ='')
-    with file:    
-        write = csv.writer(file)
-        write.writerows(accuracies)
-    print(f"Successfully saved accuracies to train_accuracies.csv")
+        write.writerow(["losses","accuracies"])
+        write.writerows([list(i) for i in zip(losses,accuracies)])
+    print(f"Successfully saved losses and accuracies to train.csv")
     print("Training done!")
 
     print("Starting validation")
     losses = []
     accuracies = []
-    for epoch in range(num_epochs):
+    for epoch in range(args.epoch):
         print(f"Epoch {epoch}")
         resnet18.eval()
-        with tqdm(train_loader, unit="batch") as tepoch:
-            for inputs, labels in train_loader:
+        with tqdm(valid_loader, unit="batch") as tepoch:
+            for inputs, labels in valid_loader:
                 inputs, labels = torch.unsqueeze(inputs, 1).to(device), torch.unsqueeze(labels, 1).type(torch.float32).to(device)
                 outputs = resnet18(inputs)
                 loss = loss_function(outputs, labels)
@@ -98,23 +88,14 @@ def main():
                 correct = (predicted == labels).sum().item()
                 losses.append(loss.item())
                 accuracy = correct / total
-                accuracies.append(accuracy)
+                accuracies.append(100. * accuracy)
                 tepoch.set_postfix(loss=loss.item(), accuracy=100. * accuracy)
-            if losses and losses[-1] < losses[-2]:
-                torch.save(resnet18.state_dict(), args.output_file)
-                print(f"Successfully saved model to {args.valid_dataset}")
-                print(f"loss decressed from {losses[-2]} to {losses[-1]}")
-    file = open('valid_losses.csv', 'w', newline ='')
+    file = open('validation.csv', 'w', newline ='')
     with file:    
         write = csv.writer(file)
-        write.writerows(losses)
-    print(f"Successfully saved losses to valid_losses.csv")
-    
-    file = open('valid_accuracies.csv', 'w', newline ='')
-    with file:    
-        write = csv.writer(file)
-        write.writerows(accuracies)
-    print(f"Successfully saved accuracies to valid_accuracies.csv")
+        write.writerow(["losses","accuracies"])
+        write.writerows([list(i) for i in zip(losses,accuracies)])
+    print(f"Successfully saved losses and accuracies to validation.csv")
     print("Validation done!")
 
 if __name__ == "__main__":
