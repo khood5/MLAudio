@@ -64,6 +64,7 @@ def main():
                 tepoch.set_postfix(loss=loss.item(), accuracy=100. * accuracy)
                 if len(losses) > 1 and losses[-1] < min(losses): # check point
                         torch.save(resnet18.state_dict(), args.output_file)
+                tepoch.update(1)
     file = open('train.csv', 'w', newline ='')
     with file:    
         write = csv.writer(file)
@@ -78,7 +79,7 @@ def main():
     for epoch in range(args.epoch):
         print(f"Epoch {epoch}")
         resnet18.eval()
-        with tqdm(valid_loader, unit="batch") as tepoch:
+        with tqdm(valid_loader, unit="batch", ncols=128) as tepoch:
             for inputs, labels in valid_loader:
                 inputs, labels = torch.unsqueeze(inputs, 1).to(device), torch.unsqueeze(labels, 1).type(torch.float32).to(device)
                 outputs = resnet18(inputs)
@@ -90,6 +91,7 @@ def main():
                 accuracy = correct / total
                 accuracies.append(100. * accuracy)
                 tepoch.set_postfix(loss=loss.item(), accuracy=100. * accuracy)
+                tepoch.update(1)
     file = open('validation.csv', 'w', newline ='')
     with file:    
         write = csv.writer(file)
