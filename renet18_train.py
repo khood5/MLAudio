@@ -61,7 +61,7 @@ def main():
                 losses.append(loss.item())
                 accuracy = correct / total
                 accuracies.append(100. * accuracy)
-                tepoch.set_postfix(loss=loss.item(), accuracy=100. * accuracy)
+                tepoch.set_postfix(loss=f'{loss.item():.3f}', accuracy=f'{(100. * accuracy):.2f}')
                 tepoch.update(1)
         torch.save(resnet18.state_dict(), args.output_file)
                 
@@ -90,7 +90,7 @@ def main():
                 losses.append(loss.item())
                 accuracy = correct / total
                 accuracies.append(100. * accuracy)
-                tepoch.set_postfix(loss=loss.item(), accuracy=100. * accuracy)
+                tepoch.set_postfix(loss=f'{loss.item():.3f}', accuracy=f'{(100. * accuracy):.2f}')
                 tepoch.update(1)
     file = open('validation.csv', 'w', newline ='')
     with file:    
