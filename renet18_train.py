@@ -17,6 +17,9 @@ def main():
     parser.add_argument('-d', '--device', default="cuda:0", type=str, help='Device to use, such as cuda:0, cuda:1, cpu, etc. (default: cuda:0 if avalable otherwise cpu)')
     parser.add_argument('-b', '--batch_size', default=10, type=int, help='Batch size for training (default: 10)')
     parser.add_argument('-e', '--epoch', default=25, type=int, help='Number of epochs for training (default: 25)')
+    parser.add_argument('-lr', '--learning_rate', default=0.1, type=float, help='Learning rate (default: 0.1')
+    parser.add_argument('-wd', '--weight_decay', default=0.0001, type=float, help='Weight decay (default:  0.0001')
+    parser.add_argument('-m', '--momentum', default=0.9, type=float, help='Momentum (default:  0.9')
     args = parser.parse_args()
 
     try:
@@ -31,7 +34,7 @@ def main():
     resnet18.fc = nn.Sequential(nn.Linear(resnet18.fc.in_features, 1), nn.Sigmoid())# change to binary classification 
     resnet18.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False) # change input layer to greyscale (for the spectrogram )
     loss_function = nn.BCELoss()
-    optimizer = optim.SGD(resnet18.parameters(), lr=0.1, weight_decay=0.0001, momentum=0.9)
+    optimizer = optim.SGD(resnet18.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, momentum=args.momentum)
     resnet18.to(device)
     print(f"Model succsefuly made and loaded to {device}")
 
