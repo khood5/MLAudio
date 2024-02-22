@@ -62,9 +62,9 @@ def main():
                 accuracy = correct / total
                 accuracies.append(100. * accuracy)
                 tepoch.set_postfix(loss=loss.item(), accuracy=100. * accuracy)
-                if len(losses) > 1 and losses[-1] < min(losses): # check point
-                        torch.save(resnet18.state_dict(), args.output_file)
                 tepoch.update(1)
+        torch.save(resnet18.state_dict(), args.output_file)
+                
     file = open('train.csv', 'w', newline ='')
     with file:    
         write = csv.writer(file)
