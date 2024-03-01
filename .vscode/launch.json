@@ -24,10 +24,8 @@
             "program": "${workspaceFolder}/data/makeGunshotAudio.py",
             "args": [
                 "${workspaceFolder}/data/backgroundIndex.csv",
-                "${workspaceFolder}/data/gunshotSrcIndex.csv",
-                "${workspaceFolder}/data/tmp",
-                "-n",
-                "1"
+                "${workspaceFolder}/data/sortedGunshots.csv",
+                "${workspaceFolder}/data/15secGunshot",
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"

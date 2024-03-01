@@ -40,7 +40,7 @@ def main():
     parser.add_argument('gunshot_index', type=str, help='Path to the index file (csv file with list of paths to gunshot sound files)')
     parser.add_argument('output_directory', type=str, help='Path to the output directory')
     parser.add_argument('-n', '--number_of_samples_to_make', default=-1, type=int, help='Number of samples to generate (max equal to the number of background files) default= all files in background_index')
-    parser.add_argument('-p', '--num_processes', nargs='?', default=2, type=int, help='number of processes to use default=2')
+    parser.add_argument('-p', '--num_processes', nargs='?', default=1, type=int, help='number of processes to use default=1')
     parser.add_argument('-sr', '--sample_rate', nargs='?', default=96000, type=int, help='sample_rate of audio files default=96000')
     args = parser.parse_args()
 
@@ -49,25 +49,26 @@ def main():
         gunshotIndexFilePaths = csv.reader(csvfile, delimiter=',')
         for row in gunshotIndexFilePaths:
             gunshotSamples.append(row[0])
-
+    print(f"read {len(gunshotSamples)} gunshot samples")
     backgroundSounds = []
     with open(args.background_index, newline='') as csvfile:
         backgroundIndexFilePaths = csv.reader(csvfile, delimiter=',')
         for row in backgroundIndexFilePaths:
             backgroundSounds.append(row[0])
+    print(f"read {len(backgroundSounds)} background samples")
     number_of_samples_to_make = args.number_of_samples_to_make if args.number_of_samples_to_make != -1 else len(backgroundSounds)
+    print(f"making {number_of_samples_to_make} gunshot + background samples")
     if(number_of_samples_to_make > len(backgroundSounds)):
         print("ERROR: number_of_samples_to_make must be euqal or smaller then the number of background audio files in the backgroundIndex")
         print(f"Requested \033[1m {args.number_of_samples_to_make} \033[0m number_of_samples_to_make")
         print(f"But only found \033[1m {len(backgroundSounds)} \033[0m background audio files in background_index")
         sys.exit(1)  # abort because of error
 
-    remainingSamples = args.number_of_samples_to_make
+    remainingSamples = number_of_samples_to_make
     index = 0
     manager = Manager()
-    gunshotWithBackgroundIndexRows = manager.list([[]]*args.number_of_samples_to_make) 
-    with tqdm(total=args.number_of_samples_to_make) as pbar:
-        remainingSamples = args.number_of_samples_to_make
+    gunshotWithBackgroundIndexRows = manager.list([[]]*number_of_samples_to_make) 
+    with tqdm(total=number_of_samples_to_make, ncols=128) as pbar:
         while remainingSamples > 0:
             processList = []
             numProcesses = min(args.num_processes, remainingSamples)

@@ -50,7 +50,7 @@ def main():
     remainingSamples = args.number_of_samples_to_make
     outputFileNames = []
 
-    with tqdm(total=args.number_of_samples_to_make) as pbar:
+    with tqdm(total=args.number_of_samples_to_make, ncols=128) as pbar:
         remainingSamples = args.number_of_samples_to_make
         while remainingSamples > 0:
             numProcesses = min(args.num_processes, remainingSamples)

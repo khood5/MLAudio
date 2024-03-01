@@ -182,3 +182,8 @@ dataset/**/*
 ziFBmcf1
 dataset.old/**/*
 dataset_60sec/**/*
+data/15secBackground/**/*
+data/sortedGunshots/**/*
+data/15secGunshot/**/*
+dataset_60sec.zip
+**/*.zip
