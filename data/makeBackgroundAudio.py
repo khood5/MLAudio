@@ -17,8 +17,6 @@ def makeBackgroundAudio(audioBits, outputPath, length=60, sample_rate=96000, ran
         except Exception as e:
             print(f"cant add audio file {path}")
             print(f"An unexpected error occurred: {e}")
-
-        
         samples = samples[1:]
     BackgroundAudio = BackgroundAudio[:length * 1000] # convert milliseconds to seconds
     BackgroundAudio = BackgroundAudio.set_frame_rate(sample_rate) # fix sample rate 
