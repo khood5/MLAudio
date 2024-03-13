@@ -46,11 +46,11 @@ def main():
         transforms.Normalize(mean=[2.3009], std=[42.1936]) 
     ])
 
-    train_data = audioDataloader(index_file=args.train_dataset)
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=True, transforms=data_transform)
+    train_data = audioDataloader(index_file=args.train_dataset, transforms=data_transform)
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
     print(f"Loaded training dataset from {args.train_dataset}")
-    valid_data = audioDataloader(index_file=args.valid_dataset)
-    valid_loader = torch.utils.data.DataLoader(valid_data, batch_size=args.batch_size, shuffle=True, transforms=data_transform)
+    valid_data = audioDataloader(index_file=args.valid_dataset, transforms=data_transform)
+    valid_loader = torch.utils.data.DataLoader(valid_data, batch_size=args.batch_size, shuffle=True)
     print(f"Loaded validation dataset from {args.valid_dataset}")
     
     losses = []

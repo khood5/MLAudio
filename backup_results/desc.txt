@@ -1,0 +1,1 @@
+Trained without avg pooling and norm 15 sec training set used
