@@ -37,10 +37,10 @@ class audioDataloader(Dataset):
         mono_waveform = waveform.mean(dim=0)  # Convert stereo to mono
         specgram_transform = torchaudio.transforms.Spectrogram(pad=10)(mono_waveform)
         # Apply additional transforms if provided
+        specgram_transform = specgram_transform.unsqueeze(0) # transform from shape (Hight,Width) to (Channel,Hight,Width)
+        label_tensor = torch.tensor([self.audioLabels[index]], dtype=torch.float32)
         if self.transforms is not None:
-            mono_waveform = self.transforms(mono_waveform)
-            
-        label_tensor = torch.tensor(self.audioLabels[index], dtype=torch.float32)
+            specgram_transform = self.transforms(specgram_transform)
         return (specgram_transform, label_tensor)
 
     def getFilePath(self, index):

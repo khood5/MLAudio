@@ -7,7 +7,7 @@ from tqdm import tqdm
 import argparse
 import csv
 import numpy as np
-
+from torchvision import transforms
 
 def main():
     parser = argparse.ArgumentParser(description='Train/Validated ResNet18 on gunshot detection with spectrogram.')
@@ -33,17 +33,24 @@ def main():
 
     resnet18 = models.resnet18()
     resnet18.fc = nn.Sequential(nn.Linear(resnet18.fc.in_features, 1), nn.Sigmoid())# change to binary classification 
-    resnet18.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False) # change input layer to greyscale (for the spectrogram )
+    resnet18.conv1 =  nn.Sequential(
+                                nn.AvgPool2d((1, 32), stride=(1, 32)), # shrink input 
+                                nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False) # change first conv layer to greyscale (for the spectrogram )
+                                ) 
     loss_function = nn.BCELoss()
     optimizer = optim.SGD(resnet18.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, momentum=args.momentum)
     resnet18.to(device)
     print(f"Model succsefuly made and loaded to {device}")
 
+    data_transform = transforms.Compose([
+        transforms.Normalize(mean=[2.3009], std=[42.1936]) 
+    ])
+
     train_data = audioDataloader(index_file=args.train_dataset)
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size, shuffle=True, transforms=data_transform)
     print(f"Loaded training dataset from {args.train_dataset}")
     valid_data = audioDataloader(index_file=args.valid_dataset)
-    valid_loader = torch.utils.data.DataLoader(valid_data, batch_size=args.batch_size, shuffle=True)
+    valid_loader = torch.utils.data.DataLoader(valid_data, batch_size=args.batch_size, shuffle=True, transforms=data_transform)
     print(f"Loaded validation dataset from {args.valid_dataset}")
     
     losses = []
@@ -53,7 +60,7 @@ def main():
         resnet18.train()
         with tqdm(train_loader, unit="batch", ncols=128) as tepoch:
             for inputs, labels in train_loader:
-                inputs, labels = torch.unsqueeze(inputs, 1).to(device), torch.unsqueeze(labels, 1).type(torch.float32).to(device)
+                inputs, labels = inputs.to(device), labels.to(device)
                 optimizer.zero_grad()
                 outputs = resnet18(inputs)
                 loss = loss_function(outputs, labels)
