@@ -188,3 +188,4 @@ data/15secGunshot/**/*
 dataset_60sec.zip
 **/*.zip
 dataset_15sec/**/*
+data/MNIST/**/*

@@ -18,9 +18,11 @@ def main():
     parser.add_argument('-d', '--device', default="cuda:0", type=str, help='Device to use, such as cuda:0, cuda:1, cpu, etc. (default: cuda:0 if avalable otherwise cpu)')
     parser.add_argument('-b', '--batch_size', default=10, type=int, help='Batch size for training (default: 10)')
     parser.add_argument('-e', '--epoch', default=25, type=int, help='Number of epochs for training (default: 25)')
-    parser.add_argument('-lr', '--learning_rate', default=0.1, type=float, help='Learning rate (default: 0.1')
+    parser.add_argument('-lr', '--learning_rate', default=0.0001, type=float, help='Learning rate (default: 0.1')
     parser.add_argument('-wd', '--weight_decay', default=0.0001, type=float, help='Weight decay (default:  0.0001')
     parser.add_argument('-m', '--momentum', default=0.9, type=float, help='Momentum (default:  0.9')
+    parser.add_argument('-tfn', '--train_file_name', default='train.csv', type=str, help='file to output training loss and accuracies')
+    parser.add_argument('-vfn', '--valid_file_name', default='validation.csv', type=str, help='file to output validation loss and accuracies')
     args = parser.parse_args()
 
     try:
@@ -58,7 +60,7 @@ def main():
     for epoch in range(args.epoch):
         print(f"Epoch {epoch}")
         resnet18.train()
-        with tqdm(train_loader, unit="batch", ncols=128) as tepoch:
+        with tqdm(train_loader, unit="batch", ncols=96) as tepoch:
             for inputs, labels in train_loader:
                 inputs, labels = inputs.to(device), labels.to(device)
                 optimizer.zero_grad()
@@ -81,7 +83,7 @@ def main():
         print(f"mean loss of  {np.mean(losses):.3f}")
         print()
                 
-    file = open('train.csv', 'w', newline ='')
+    file = open(args.train_file_name, 'w', newline ='')
     with file:    
         write = csv.writer(file)
         write.writerow(["losses","accuracies"])
@@ -95,9 +97,9 @@ def main():
     for epoch in range(args.epoch):
         print(f"Epoch {epoch}")
         resnet18.eval()
-        with tqdm(valid_loader, unit="batch", ncols=128) as tepoch:
+        with tqdm(valid_loader, unit="batch", ncols=96) as tepoch:
             for inputs, labels in valid_loader:
-                inputs, labels = torch.unsqueeze(inputs, 1).to(device), torch.unsqueeze(labels, 1).type(torch.float32).to(device)
+                inputs, labels = inputs.to(device), labels.to(device)
                 outputs = resnet18(inputs)
                 loss = loss_function(outputs, labels)
                 predicted = torch.round(outputs)
@@ -108,7 +110,7 @@ def main():
                 accuracies.append(100. * accuracy)
                 tepoch.set_postfix(loss=f'{loss.item():.3f}', accuracy=f'{(100. * accuracy):.2f}')
                 tepoch.update(1)
-    file = open('validation.csv', 'w', newline ='')
+    file = open(args.valid_file_name, 'w', newline ='')
     with file:    
         write = csv.writer(file)
         write.writerow(["losses","accuracies"])
