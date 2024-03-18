@@ -94,22 +94,20 @@ def main():
     print("Starting validation")
     losses = []
     accuracies = []
-    for epoch in range(args.epoch):
-        print(f"Epoch {epoch}")
-        resnet18.eval()
-        with tqdm(valid_loader, unit="batch", ncols=96) as tepoch:
-            for inputs, labels in valid_loader:
-                inputs, labels = torch.to(device), torch.to(device)
-                outputs = resnet18(inputs)
-                loss = loss_function(outputs, labels)
-                _, predicted = torch.max(torch.round(outputs),1)
-                total = labels.size(0)
-                correct = (predicted == labels).sum().item()
-                losses.append(loss.item())
-                accuracy = correct / total
-                accuracies.append(100. * accuracy)
-                tepoch.set_postfix(loss=f'{loss.item():.3f}', accuracy=f'{(100. * accuracy):.2f}')
-                tepoch.update(1)
+    resnet18.eval()
+    with tqdm(valid_loader, unit="batch", ncols=96) as tepoch:
+        for inputs, labels in valid_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = resnet18(inputs)
+            loss = loss_function(outputs, labels)
+            _, predicted = torch.max(torch.round(outputs),1)
+            total = labels.size(0)
+            correct = (predicted == labels).sum().item()
+            losses.append(loss.item())
+            accuracy = correct / total
+            accuracies.append(100. * accuracy)
+            tepoch.set_postfix(loss=f'{loss.item():.3f}', accuracy=f'{(100. * accuracy):.2f}')
+            tepoch.update(1)
     file = open(args.valid_file_name, 'w', newline ='')
     with file:    
         write = csv.writer(file)
