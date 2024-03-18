@@ -40,7 +40,7 @@ def main():
                                 nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False) # change first conv layer to greyscale (for the spectrogram )
                                 ) 
     loss_function = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(resnet18.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay, momentum=args.momentum)
+    optimizer = optim.Adam(resnet18.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     resnet18.to(device)
     print(f"Model succsefuly made and loaded to {device}")
 
@@ -57,9 +57,11 @@ def main():
     
     losses = []
     accuracies = []
+    bestLoss = 100 # really big number so first epoch is always smaller 
     for epoch in range(args.epoch):
         print(f"Epoch {epoch}")
         resnet18.train()
+        batchLoss = []
         with tqdm(train_loader, unit="batch", ncols=96) as tepoch:
             for inputs, labels in train_loader:
                 inputs, labels = inputs.to(device), labels.flatten().type(torch.LongTensor).to(device)
@@ -72,12 +74,16 @@ def main():
                 total = labels.size(0)
                 correct = (predicted == labels).sum().item()
                 losses.append(loss.item())
+                batchLoss.append(loss.item())
                 accuracy = correct / total
                 accuracies.append(accuracy)
                 tepoch.set_postfix(loss=f'{loss.item():.3f}', accuracy=f'{(100. * accuracy):.2f}')
                 tepoch.update(1)
-        torch.save(resnet18.state_dict(), args.output_file)
-        print("Saved model")
+        if bestLoss > sum(batchLoss) / len(batchLoss):
+            print(f"loss improved to {sum(batchLoss) / len(batchLoss)} from {bestLoss}")
+            bestLoss = sum(batchLoss) / len(batchLoss)
+            torch.save(resnet18.state_dict(), args.output_file)
+            print(f"Saved model")
         print(f"Epoch {epoch} summary:")
         print(f"mean accuracy {np.mean(accuracies):.2f}")
         print(f"mean loss of  {np.mean(losses):.3f}")
@@ -92,6 +98,8 @@ def main():
     print("Training done!")
 
     print("Starting validation")
+    resnet18.load_state_dict(torch.load(args.output_file))
+    print(f"model loaded from loss {bestLoss}")
     losses = []
     accuracies = []
     resnet18.eval()
