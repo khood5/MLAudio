@@ -88,7 +88,7 @@ def main():
         write = csv.writer(file)
         write.writerow(["losses","accuracies"])
         write.writerows([list(i) for i in zip(losses,accuracies)])
-    print(f"Successfully saved losses and accuracies to train.csv")
+    print(f"Successfully saved losses and accuracies to {args.train_file_name}")
     print("Training done!")
 
     print("Starting validation")
@@ -115,7 +115,7 @@ def main():
         write = csv.writer(file)
         write.writerow(["losses","accuracies"])
         write.writerows([list(i) for i in zip(losses,accuracies)])
-    print(f"Successfully saved losses and accuracies to validation.csv")
+    print(f"Successfully saved losses and accuracies to {args.valid_file_name}")
     print("Validation done!")
 
 if __name__ == "__main__":
