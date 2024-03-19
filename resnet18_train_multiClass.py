@@ -105,7 +105,7 @@ def main():
     resnet18.eval()
     with tqdm(valid_loader, unit="batch", ncols=96) as tepoch:
         for inputs, labels in valid_loader:
-            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = inputs.to(device), labels.flatten().type(torch.LongTensor).to(device)
             outputs = resnet18(inputs)
             loss = loss_function(outputs, labels)
             _, predicted = torch.max(torch.round(outputs),1)
