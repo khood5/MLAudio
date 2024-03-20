@@ -8,24 +8,7 @@ import argparse
 import csv
 import numpy as np
 from torchvision import transforms
-
-def getMulticlassModel():
-    resnet18 = models.resnet18()
-    resnet18.fc = nn.Sequential(nn.Linear(resnet18.fc.in_features, 2), nn.Softmax(dim=1))# change to binary classification 
-    resnet18.conv1 =  nn.Sequential(
-                                nn.AvgPool2d((1, 32), stride=(1, 32)), # shrink input 
-                                nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False) # change first conv layer to greyscale (for the spectrogram )
-                                ) 
-    return resnet18
-    
-def getBindayClassification():
-    resnet18 = models.resnet18()
-    resnet18.fc = nn.Sequential(nn.Linear(resnet18.fc.in_features, 1), nn.Sigmoid())# change to binary classification 
-    resnet18.conv1 =  nn.Sequential(
-                                nn.AvgPool2d((1, 32), stride=(1, 32)), # shrink input 
-                                nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False) # change first conv layer to greyscale (for the spectrogram )
-                                ) 
-    return resnet18
+from models import getBindayClassification, getMulticlassModel
 
 def main():
     parser = argparse.ArgumentParser(description='Validated ResNet18 on gunshot detection with spectrogram.')
@@ -47,14 +30,14 @@ def main():
     
 
     resnet18 = None
+    loss_function = None
     if args.model_type == 'b':
-        resnet18 = getBindayClassification()
+        resnet18, loss_function = getBindayClassification()
         print("Model Binday Classification selected and created") 
     else:
-        resnet18 = getMulticlassModel()
+        resnet18, loss_function = getMulticlassModel()
         print("Model Multi-Class Classification selected and created")
     resnet18.to(device)
-    loss_function = nn.CrossEntropyLoss()
     print(f"Model succsefuly loaded to {device}")
 
     data_transform = transforms.Compose([
@@ -67,7 +50,6 @@ def main():
     
     losses = []
     accuracies = []
-    bestLoss = 100 # really big number so first epoch is always smaller 
     print("Starting validation")
     resnet18.load_state_dict(torch.load(args.model_file))
     print(f"Model succsefuly loaded from file {args.model_file}")
@@ -76,15 +58,23 @@ def main():
     resnet18.eval()
     with tqdm(valid_loader, unit="batch", ncols=96) as tepoch:
         for inputs, labels in valid_loader:
-            inputs, labels = inputs.to(device), labels.flatten().type(torch.LongTensor).to(device)
+            if args.model_type == 'b':
+                inputs, labels = inputs.to(device), labels.to(device)
+            else:
+                inputs, labels = inputs.to(device), labels.flatten().type(torch.LongTensor).to(device)
             outputs = resnet18(inputs)
             loss = loss_function(outputs, labels)
-            _, predicted = torch.max(torch.round(outputs),1)
-            total = labels.size(0)
-            correct = (predicted == labels).sum().item()
             losses.append(loss.item())
+
+            total = labels.size(0)
+            if args.model_type == 'b':
+                predicted = torch.round(outputs)
+            else:
+                _, predicted = torch.max(torch.round(outputs),1)
+            correct = (predicted == labels).sum().item()
             accuracy = correct / total
             accuracies.append(100. * accuracy)
+            
             tepoch.set_postfix(loss=f'{loss.item():.3f}', accuracy=f'{(100. * accuracy):.2f}')
             tepoch.update(1)
     with open(args.validation_file_name, 'w', newline ='') as file:    

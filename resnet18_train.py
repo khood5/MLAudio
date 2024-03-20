@@ -8,24 +8,7 @@ import argparse
 import csv
 import numpy as np
 from torchvision import transforms
-
-def getMulticlassModel():
-    resnet18 = models.resnet18()
-    resnet18.fc = nn.Sequential(nn.Linear(resnet18.fc.in_features, 2), nn.Softmax(dim=1))# change to binary classification 
-    resnet18.conv1 =  nn.Sequential(
-                                nn.AvgPool2d((1, 32), stride=(1, 32)), # shrink input 
-                                nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False) # change first conv layer to greyscale (for the spectrogram )
-                                ) 
-    return resnet18
-    
-def getBindayClassification():
-    resnet18 = models.resnet18()
-    resnet18.fc = nn.Sequential(nn.Linear(resnet18.fc.in_features, 1), nn.Sigmoid())# change to binary classification 
-    resnet18.conv1 =  nn.Sequential(
-                                nn.AvgPool2d((1, 32), stride=(1, 32)), # shrink input 
-                                nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False) # change first conv layer to greyscale (for the spectrogram )
-                                ) 
-    return resnet18
+from models import getBindayClassification, getMulticlassModel
 
 def main():
     parser = argparse.ArgumentParser(description='Train ResNet18 on gunshot detection with spectrogram.')
@@ -51,14 +34,14 @@ def main():
     
 
     resnet18 = None
+    loss_function = None
     if args.model_type == 'b':
-        resnet18 = getBindayClassification()
+        resnet18, loss_function = getBindayClassification()
         print("Model Binday Classification selected and created") 
     else:
-        resnet18 = getMulticlassModel()
+        resnet18, loss_function = getMulticlassModel()
         print("Model Multi-Class Classification selected and created")
 
-    loss_function = nn.CrossEntropyLoss()
     optimizer = optim.Adam(resnet18.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     resnet18.to(device)
     print(f"Model succsefuly loaded to {device}")
@@ -81,19 +64,25 @@ def main():
         batchLoss = []
         with tqdm(train_loader, unit="batch", ncols=96) as tepoch:
             for inputs, labels in train_loader:
-                inputs, labels = inputs.to(device), labels.flatten().type(torch.LongTensor).to(device)
+                if args.model_type == 'b':
+                    inputs, labels = inputs.to(device), labels.to(device)
+                else:
+                    inputs, labels = inputs.to(device), labels.flatten().type(torch.LongTensor).to(device)
                 optimizer.zero_grad()
                 outputs = resnet18(inputs)
                 loss = loss_function(outputs, labels)
                 loss.backward()
                 optimizer.step()
-                _, predicted = torch.max(torch.round(outputs),1)
-                total = labels.size(0)
-                correct = (predicted == labels).sum().item()
                 losses.append(loss.item())
                 batchLoss.append(loss.item())
+                total = labels.size(0)
+                if args.model_type == 'b':
+                    predicted = torch.round(outputs)
+                else:
+                    _, predicted = torch.max(torch.round(outputs),1)
+                correct = (predicted == labels).sum().item()
                 accuracy = correct / total
-                accuracies.append(accuracy)
+                accuracies.append(100. * accuracy)
                 tepoch.set_postfix(loss=f'{loss.item():.3f}', accuracy=f'{(100. * accuracy):.2f}')
                 tepoch.update(1)
         if bestLoss > sum(batchLoss) / len(batchLoss):
