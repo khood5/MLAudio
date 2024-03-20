@@ -82,6 +82,7 @@ def main():
                 optimizer.step()
                 losses.append(loss.item())
                 batchLoss.append(loss.item())
+                
                 total = labels.size(0)
                 if args.model_type == 'b':
                     predicted = torch.round(outputs)
@@ -90,6 +91,7 @@ def main():
                 correct = (predicted == labels).sum().item()
                 accuracy = correct / total
                 accuracies.append(100. * accuracy)
+                
                 tepoch.set_postfix(loss=f'{loss.item():.3f}', accuracy=f'{(100. * accuracy):.2f}')
                 tepoch.update(1)
         if bestLoss > sum(batchLoss) / len(batchLoss):
