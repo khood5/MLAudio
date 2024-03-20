@@ -28,7 +28,7 @@ def getBindayClassification():
     return resnet18
 
 def main():
-    parser = argparse.ArgumentParser(description='Train/Validated ResNet18 on gunshot detection with spectrogram.')
+    parser = argparse.ArgumentParser(description='Validated ResNet18 on gunshot detection with spectrogram.')
  
     parser.add_argument('valid_dataset', type=str, help='Path to the index file for validation')
     parser.add_argument('model_file', type=str, help='Path to load model params (should be /path/to/FILENAME.pt)')
