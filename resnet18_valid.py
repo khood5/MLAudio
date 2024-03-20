@@ -69,8 +69,8 @@ def main():
     accuracies = []
     bestLoss = 100 # really big number so first epoch is always smaller 
     print("Starting validation")
-    resnet18.load_state_dict(torch.load(args.output_file))
-    print(f"model loaded from loss {bestLoss}")
+    resnet18.load_state_dict(torch.load(args.model_file))
+    print(f"Model succsefuly loaded from file {args.model_file}")
     losses = []
     accuracies = []
     resnet18.eval()
