@@ -20,9 +20,11 @@ def main():
     parser.add_argument('-e', '--epoch', default=25, type=int, help='Number of epochs for training (default: 25)')
     parser.add_argument('-lr', '--learning_rate', default=0.0001, type=float, help='Learning rate (default: 0.1')
     parser.add_argument('-wd', '--weight_decay', default=0.0001, type=float, help='Weight decay (default:  0.0001')
-    parser.add_argument('-m', '--momentum', default=0.9, type=float, help='Momentum (default:  0.9')
+    parser.add_argument('-m', '--momentum', default=0.9, type=float, help='Momentum only for SGD (default:  0.9')
     parser.add_argument('-tfn', '--train_file_name', default='train.csv', type=str, help='file to output training loss and accuracies')
     parser.add_argument('-mt', '--model_type', default='b', type=str, help='Specify the type of resnet18 model to load either Multi-Class (m) or Binday (b) Classification configuration')
+    parser.add_argument('-sgd', '--stochastic_gradient_descent', action='store_true', help='Specify whether to use stochastic gradient descent optimizer, otherwise adam is used')
+
     args = parser.parse_args()
 
     try:
@@ -42,7 +44,12 @@ def main():
         resnet18, loss_function = getMulticlassModel()
         print("Model Multi-Class Classification selected and created")
 
-    optimizer = optim.Adam(resnet18.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+    optimizer = None
+    if args.stochastic_gradient_descent:
+        optimizer = optim.SGD(resnet18.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    else:
+        optimizer = optim.Adam(resnet18.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+        
     resnet18.to(device)
     print(f"Model succsefuly loaded to {device}")
 
