@@ -2,4 +2,5 @@
 ----
 LR:         0.01 \
 epochs:     50 \
-batch size: 50
+batch size: 50 \
+optimizer: SGD
