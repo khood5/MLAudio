@@ -34,8 +34,8 @@ def main():
     parser.add_argument('model_file', type=str, help='Path to load model params (should be /path/to/FILENAME.pt)')
     parser.add_argument('-d', '--device', default="cuda:0", type=str, help='Device to use, such as cuda:0, cuda:1, cpu, etc. (default: cuda:0 if avalable otherwise cpu)')
     parser.add_argument('-b', '--batch_size', default=10, type=int, help='Batch size for training (default: 10)')
-    parser.add_argument('-e', '--epoch', default=25, type=int, help='Number of epochs for training (default: 25)')
-    parser.add_argument('-mt', '--model_type', default='train.csv', default='b', type=str, help='Specify the type of resnet18 model to load either Multi-Class (m) or Binday (b) Classification configuration')
+    parser.add_argument('-mt', '--model_type', default='b', type=str, help='Specify the type of resnet18 model to load either Multi-Class (m) or Binday (b) Classification configuration')
+    parser.add_argument('-vfn', '--validation_file_name', default='valid.csv', type=str, help='File to output validation loss and accuracies.')
     args = parser.parse_args()
 
     try:
@@ -87,8 +87,7 @@ def main():
             accuracies.append(100. * accuracy)
             tepoch.set_postfix(loss=f'{loss.item():.3f}', accuracy=f'{(100. * accuracy):.2f}')
             tepoch.update(1)
-    file = open(args.valid_file_name, 'w', newline ='')
-    with file:    
+    with open(args.validation_file_name, 'w', newline ='') as file:    
         write = csv.writer(file)
         write.writerow(["losses","accuracies"])
         write.writerows([list(i) for i in zip(losses,accuracies)])

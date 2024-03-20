@@ -39,7 +39,7 @@ def main():
     parser.add_argument('-wd', '--weight_decay', default=0.0001, type=float, help='Weight decay (default:  0.0001')
     parser.add_argument('-m', '--momentum', default=0.9, type=float, help='Momentum (default:  0.9')
     parser.add_argument('-tfn', '--train_file_name', default='train.csv', type=str, help='file to output training loss and accuracies')
-    parser.add_argument('-mt', '--model_type', default='train.csv', default='b', type=str, help='Specify the type of resnet18 model to load either Multi-Class (m) or Binday (b) Classification configuration')
+    parser.add_argument('-mt', '--model_type', default='b', type=str, help='Specify the type of resnet18 model to load either Multi-Class (m) or Binday (b) Classification configuration')
     args = parser.parse_args()
 
     try:
@@ -106,8 +106,7 @@ def main():
         print(f"mean loss of  {np.mean(losses):.3f}")
         print()
                 
-    file = open(args.train_file_name, 'w', newline ='')
-    with file:    
+    with open(args.train_file_name, 'w', newline ='') as file:    
         write = csv.writer(file)
         write.writerow(["losses","accuracies"])
         write.writerows([list(i) for i in zip(losses,accuracies)])
