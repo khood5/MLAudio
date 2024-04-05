@@ -98,7 +98,7 @@ def main():
             print(f"loss improved to {sum(batchLoss) / len(batchLoss)} from {bestLoss}")
             bestLoss = sum(batchLoss) / len(batchLoss)
             torch.save(resnet18.state_dict(), args.output_file)
-            print(f"Saved model")
+            print(f"Saved model to {args.output_file}")
         print(f"Epoch {epoch} summary:")
         print(f"mean accuracy {np.mean(accuracies):.2f}")
         print(f"mean loss of  {np.mean(losses):.3f}")
