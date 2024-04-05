@@ -1,0 +1,9 @@
+{
+  "leak_mode": "all",
+  "min_weight": -1,
+  "max_weight": 1,
+  "min_threshold": -1,
+  "max_threshold": 1,
+  "max_delay": 5,
+  "discrete": false
+}

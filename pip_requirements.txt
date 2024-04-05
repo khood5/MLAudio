@@ -35,7 +35,6 @@ jupyterlab
 jupyterlab_pygments
 jupyterlab_server
 kiwisolver
-matplotlib
 mistune
 nbclient
 nbconvert
@@ -44,7 +43,6 @@ notebook
 notebook_shim
 openpyxl
 overrides
-pandas
 pandocfilters
 prometheus_client
 pyarrow
@@ -59,7 +57,6 @@ rfc3986-validator
 rpds-py
 scikit-learn
 scipy
-seaborn
 Send2Trash
 setuptools
 sniffio
@@ -67,14 +64,16 @@ soupsieve
 terminado
 threadpoolctl
 tinycss2
+# important ones 
 torch
 torchaudio
 torchvision
+soundfile
 tqdm
-types-python-dateutil
-tzdata
-uri-template
-webcolors
-webencodings
-websocket-client
-wheel
+matplotlib
+seaborn
+pandas
+multiprocessing
+uuid
+scikit-learn
+scipy

@@ -1,0 +1,26 @@
+ {
+    "starting_nodes": 100,
+    "starting_edges": 4950,
+    "merge_rate": 0,
+    "population_size": 500,
+    "multi_edges": 0,
+    "crossover_rate": 0.5,
+    "mutation_rate": 0.9,
+    "selection_type": "tournament",
+    "tournament_size_factor": 0.1,
+    "tournament_best_net_factor": 0.9,
+    "random_factor": 0.5,
+    "num_mutations": 100,
+    "node_mutations": { "Threshold": 1.0 },
+    "net_mutations": { },
+    "edge_mutations": { "Weight": 0.7, "Delay": 0.3 },
+    "num_best": 3,
+
+    "add_node_rate": 0.2,
+    "delete_node_rate": 0.5,
+    "add_edge_rate": 0.75,
+    "delete_edge_rate": 0.25,
+    "node_params_rate": 2.5,
+    "edge_params_rate": 2.5,
+    "net_params_rate" : 0
+}
