@@ -3,7 +3,7 @@ from torchvision import transforms
 from audioDataLoader import audioDataloader
 from tqdm import tqdm
 import numpy as np
-import tqdm
+from tqdm import tqdm
 import argparse
 
 parser = argparse.ArgumentParser(description='Process train, valid, and test datasets.')
