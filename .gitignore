@@ -189,3 +189,4 @@ dataset_60sec.zip
 **/*.zip
 dataset_15sec/**/*
 data/MNIST/**/*
+**/*.npy
