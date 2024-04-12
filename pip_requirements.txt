@@ -73,7 +73,6 @@ tqdm
 matplotlib
 seaborn
 pandas
-multiprocessing
 uuid
 scikit-learn
 scipy
