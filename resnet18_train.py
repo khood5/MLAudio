@@ -54,7 +54,8 @@ def main():
     print(f"Model succsefuly loaded to {device}")
 
     data_transform = transforms.Compose([
-        transforms.Normalize(mean=[2.3009], std=[42.1936]) 
+        transforms.Normalize(mean=[2.3009], std=[42.1936]),
+        TransposeTensor(),
     ])
 
     train_data = audioDataloader(index_file=args.train_dataset, transforms=data_transform)
@@ -110,6 +111,11 @@ def main():
         write.writerows([list(i) for i in zip(losses,accuracies)])
     print(f"Successfully saved losses and accuracies to {args.train_file_name}")
     print("Training done!")
+
+# swap freq and time dim to match SNN
+class TransposeTensor(object):
+    def __call__(self, tensor):
+        return torch.transpose(tensor, 1, 2)
 
 if __name__ == "__main__":
     main()

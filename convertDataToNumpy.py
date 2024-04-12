@@ -5,8 +5,6 @@ from tqdm import tqdm
 import numpy as np
 from tqdm import tqdm
 import argparse
-import h5py
-import os
 
 parser = argparse.ArgumentParser(description='Process train, valid, and test datasets.')
 parser.add_argument('train_dataset', type=str, help='Path to the train dataset file')
@@ -33,8 +31,8 @@ train_data = audioDataloader(index_file=train_dataset, transforms=data_transform
 valid_data = audioDataloader(index_file=valid_dataset, transforms=data_transform)
 test_data = audioDataloader(index_file=test_dataset, transforms=data_transform)
 
-features_dim = len(train_data[0][0][0])
-timestep_dim = len(train_data[0][0][0][0])
+timestep_dim = len(train_data[0][0][0])
+features_dim = len(train_data[0][0][0][0])
 
 
 print("making training numpy file")
@@ -42,16 +40,11 @@ data_instance_dim = len(train_data)
 neuroTrain = torch.zeros((data_instance_dim, features_dim, timestep_dim))
 neuroTrainLabels = torch.zeros((data_instance_dim))
 for i in tqdm(range(data_instance_dim)):
-    neuroTrain[i] = train_data[i][0]
+    neuroTrain[i] = torch.transpose(train_data[i][0], 1, 2) # swap freq and time dims
     neuroTrainLabels[i] = train_data[i][1]
 neuroTrain = neuroTrain.numpy()
 np.save(args.train_out, neuroTrain)
 np.save(f"{args.train_out}_labels", neuroTrainLabels)
-
-neuroTrain = torch.zeros((data_instance_dim))
-for i in tqdm(range(data_instance_dim)):
-    neuroTrain[i] = train_data[i][1]
-neuroTrain = neuroTrain.numpy()
 
 
 print("making validation numpy file")
@@ -59,7 +52,7 @@ data_instance_dim = len(valid_data)
 neuroValid = torch.zeros((data_instance_dim, features_dim, timestep_dim))
 neuroValidLabels = torch.zeros((data_instance_dim))
 for i in tqdm(range(data_instance_dim)):
-    neuroValid[i] = valid_data[i][0]
+    neuroValid[i] = torch.transpose(valid_data[i][0], 1, 2) # swap freq and time dims
     neuroValidLabels[i] = valid_data[i][1]
 neuroValid = neuroValid.numpy()
 np.save(args.valid_out, neuroValid)
@@ -70,7 +63,7 @@ data_instance_dim = len(test_data)
 neuroTest = torch.zeros((data_instance_dim, features_dim, timestep_dim))
 neuroTestLabels = torch.zeros((data_instance_dim))
 for i in tqdm(range(data_instance_dim)):
-    neuroTest[i] = test_data[i][0]
+    neuroTest[i] = torch.transpose(test_data[i][0], 1, 2) # swap freq and time dims
     neuroTestLabels[i] = test_data[i][1]
 neuroTest = neuroTest.numpy()
 np.save(args.test_out, neuroTest)
