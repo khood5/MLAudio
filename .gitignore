@@ -190,3 +190,4 @@ dataset_60sec.zip
 dataset_15sec/**/*
 data/MNIST/**/*
 **/*.npy
+data/sortedGunshots.csv
