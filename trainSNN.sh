@@ -11,6 +11,6 @@ python snn.py\
 	--encoder config/encoder.json \
 	--processes 1 \
 	--sim_time 7201 \
-	--epochs 3 \
-	--network_filename test_eons.json\
+	--epochs 250 \
+	--network_filename firstRun.json\
     --split 0
