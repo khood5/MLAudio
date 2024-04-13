@@ -32,9 +32,9 @@ class ClassifyAudioApp(ClassifyApp):
     def fitness(self, net: neuro.Network, proc, id_for_printing=-1):
         
         net.prune()
-        missing_path_penalty = self._count_missing_input_output_paths(net)
-        if missing_path_penalty != 0:
-            return missing_path_penalty
+        # missing_path_penalty = self._count_missing_input_output_paths(net)
+        # if missing_path_penalty != 0:
+        #     return missing_path_penalty
         y_predict = self.predict(proc, net, self.X_train)
         if (self.fitness_type == "accuracy"):
             ret = accuracy_score(self.y_train, y_predict) 

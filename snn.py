@@ -18,6 +18,7 @@ def main():
     parser.add_argument("--max_fitness", default=1e+06, type=float, help="max fitness for eons")
     parser.add_argument("--processes", default=1, type=int, help="processes for EONS")
     parser.add_argument("--test_seed", default=1234, type=int, help="testing seed")
+    parser.add_argument("--template_network", default=None, type=str, help="template_network to start/continue training")
 
     print("Reading classification params")
     add_class_arguments(parser)
@@ -64,7 +65,11 @@ def main():
         train_params["num_processes"] = args.processes
         train_params["fitness"] = args.fitness
         train_start = time.time()
-        app.train(train_params, proc_instantiation, proc_params)
+        if args.template_network is not None:       
+            temp_net = read_network(temp_net)
+        else:
+            temp_net = args.template_network
+        app.train(train_params, proc_instantiation, proc_params, temp_net=temp_net)
         train_end = time.time()
         elapsed = train_end-train_start
         net = app.overall_best_net
