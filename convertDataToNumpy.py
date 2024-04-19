@@ -42,7 +42,6 @@ print(f"Number of data instances: {data_instance_dim}")
 neuroTrain = torch.zeros((data_instance_dim, features_dim, timestep_dim))
 neuroTrainLabels = torch.zeros((data_instance_dim))
 for i in tqdm(range(data_instance_dim)):
-    neuroTrain[i] = torch.transpose(train_data[i][0], 1, 2) # swap freq and time dims
     neuroTrainLabels[i] = train_data[i][1]
 neuroTrain = neuroTrain.numpy()
 np.save(args.train_out, neuroTrain)
@@ -55,7 +54,6 @@ print(f"Number of data instances: {data_instance_dim}")
 neuroValid = torch.zeros((data_instance_dim, features_dim, timestep_dim))
 neuroValidLabels = torch.zeros((data_instance_dim))
 for i in tqdm(range(data_instance_dim)):
-    neuroValid[i] = torch.transpose(valid_data[i][0], 1, 2) # swap freq and time dims
     neuroValidLabels[i] = valid_data[i][1]
 neuroValid = neuroValid.numpy()
 np.save(args.valid_out, neuroValid)
@@ -67,7 +65,6 @@ print(f"Number of data instances: {data_instance_dim}")
 neuroTest = torch.zeros((data_instance_dim, features_dim, timestep_dim))
 neuroTestLabels = torch.zeros((data_instance_dim))
 for i in tqdm(range(data_instance_dim)):
-    neuroTest[i] = torch.transpose(test_data[i][0], 1, 2) # swap freq and time dims
     neuroTestLabels[i] = test_data[i][1]
 neuroTest = neuroTest.numpy()
 np.save(args.test_out, neuroTest)

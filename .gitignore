@@ -194,3 +194,7 @@ data/sortedGunshots.csv
 data/sortedGunshots.csv
 data/dataset_5sec/**/* 
 data/sortedBackground/**/*
+data/backgroundIndex.csv
+data/gunshotIndex.csv
+data/sortedBackground.csv
+data/sortedGunshots.csv
