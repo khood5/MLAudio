@@ -31,8 +31,8 @@ train_data = audioDataloader(index_file=train_dataset, transforms=data_transform
 valid_data = audioDataloader(index_file=valid_dataset, transforms=data_transform)
 test_data = audioDataloader(index_file=test_dataset, transforms=data_transform)
 
-timestep_dim = len(train_data[0][0][0])
-features_dim = len(train_data[0][0][0][0])
+timestep_dim = len(train_data[0][0][0][0])
+features_dim = len(train_data[0][0][0])
 print(f"Number of timestep: {timestep_dim}")
 print(f"Number of features: {features_dim}")
 
