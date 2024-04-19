@@ -1,9 +1,9 @@
  {
-    "starting_nodes": 75,
-    "starting_edges": 2775,
+    "starting_nodes": 7000,
+    "starting_edges": 24496500,
     "merge_rate": 0,
     "population_size": 25,
-    "multi_edges": 0,
+    "multi_edges": 1,
     "crossover_rate": 0.5,
     "mutation_rate": 0.9,
     "selection_type": "tournament",

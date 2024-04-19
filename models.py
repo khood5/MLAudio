@@ -28,6 +28,11 @@ def getBindayClassification():
 class ClassifyAudioApp(ClassifyApp):
     def __init__(self, config, X, y):
         super().__init__(config, X, y) 
+        if (config["split"] == 0):
+            self.X_train = X
+            self.y_train = y
+            self.X_test = []
+            self.y_test = []
     
     def fitness(self, net: neuro.Network, proc, id_for_printing=-1):
         

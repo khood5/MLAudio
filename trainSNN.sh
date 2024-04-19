@@ -6,11 +6,11 @@ python snn.py\
 	--eons_params ./config/eons.json\
 	--timeseries true \
 	--app_type load \
-	--data_np /data2/khood/GitHub/MLAudio/numpyData/valid.npy \
-	--labels_np /data2/khood/GitHub/MLAudio/numpyData/valid_labels.npy \
+	--data_np neuroTrain.small.npy \
+	--labels_np neuroTrain.small_labels.npy \
 	--encoder config/encoder.json \
-	--processes 1 \
-	--sim_time 7201 \
-	--epochs 250 \
+	--processes 16 \
+	--sim_time 2401 \
+	--epochs 1000 \
 	--network_filename firstRun.json\
     --split 0
