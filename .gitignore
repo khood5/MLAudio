@@ -191,3 +191,6 @@ dataset_15sec/**/*
 data/MNIST/**/*
 **/*.npy
 data/sortedGunshots.csv
+data/sortedGunshots.csv
+data/dataset_5sec/**/* 
+data/sortedBackground/**/*

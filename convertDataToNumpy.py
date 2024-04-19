@@ -33,10 +33,12 @@ test_data = audioDataloader(index_file=test_dataset, transforms=data_transform)
 
 timestep_dim = len(train_data[0][0][0])
 features_dim = len(train_data[0][0][0][0])
-
+print(f"Number of timestep: {timestep_dim}")
+print(f"Number of features: {features_dim}")
 
 print("making training numpy file")
 data_instance_dim = len(train_data)
+print(f"Number of data instances: {data_instance_dim}")
 neuroTrain = torch.zeros((data_instance_dim, features_dim, timestep_dim))
 neuroTrainLabels = torch.zeros((data_instance_dim))
 for i in tqdm(range(data_instance_dim)):
@@ -49,6 +51,7 @@ np.save(f"{args.train_out}_labels", neuroTrainLabels)
 
 print("making validation numpy file")
 data_instance_dim = len(valid_data)
+print(f"Number of data instances: {data_instance_dim}")
 neuroValid = torch.zeros((data_instance_dim, features_dim, timestep_dim))
 neuroValidLabels = torch.zeros((data_instance_dim))
 for i in tqdm(range(data_instance_dim)):
@@ -60,6 +63,7 @@ np.save(f"{args.valid_out}_labels", neuroValidLabels)
 
 print("Making testing numpy file")
 data_instance_dim = len(test_data)
+print(f"Number of data instances: {data_instance_dim}")
 neuroTest = torch.zeros((data_instance_dim, features_dim, timestep_dim))
 neuroTestLabels = torch.zeros((data_instance_dim))
 for i in tqdm(range(data_instance_dim)):
