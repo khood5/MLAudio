@@ -31,6 +31,19 @@
             "cwd": "${workspaceFolder}"
         },
         {
+            "name": "Python: Convert Data to Numpy",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/convertDataToNumpy.py",
+            "args": [
+                "data/debugData/index.csv",
+                "--train_out",
+                "debug"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Python: SNN Train",
             "type": "debugpy",
             "request": "launch",
@@ -50,7 +63,8 @@
                 "--network_filename", "firstRun.json",
                 "--split", "1"
             ],
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "justMyCode": false
         }
     ]
 }

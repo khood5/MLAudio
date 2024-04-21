@@ -19,9 +19,16 @@ train_dataset = args.train_dataset
 valid_dataset = args.valid_dataset
 test_dataset = args.test_dataset
 
-print("Using train dataset:", train_dataset)
-print("Using valid dataset:", valid_dataset)
-print("Using test dataset:", test_dataset)
+print(f"Using train dataset: {train_dataset}")
+if valid_dataset is not None:
+    print(f"Using valid dataset: {valid_dataset}")
+else:
+    print("Skipped valid dataset.")
+
+if test_dataset is not None:
+    print(f"Using test dataset: {test_dataset}")
+else:
+    print("Skipped test dataset.")
 
 data_transform = transforms.Compose([
         transforms.Normalize(mean=[2.3009], std=[42.1936]) 
@@ -40,6 +47,7 @@ print(f"Number of data instances: {data_instance_dim}")
 neuroTrain = torch.zeros((data_instance_dim, features_dim, timestep_dim))
 neuroTrainLabels = torch.zeros((data_instance_dim))
 for i in tqdm(range(data_instance_dim)):
+    neuroTrain[i] = train_data[i][0]
     neuroTrainLabels[i] = train_data[i][1]
 neuroTrain = neuroTrain.numpy()
 np.save(args.train_out, neuroTrain)
@@ -53,7 +61,8 @@ if(valid_dataset != ''):
     neuroValid = torch.zeros((data_instance_dim, features_dim, timestep_dim))
     neuroValidLabels = torch.zeros((data_instance_dim))
     for i in tqdm(range(data_instance_dim)):
-        neuroValidLabels[i] = valid_data[i][1]
+        neuroValid[i] = train_data[i][0]
+        neuroValidLabels[i] = train_data[i][1]
     neuroValid = neuroValid.numpy()
     np.save(args.valid_out, neuroValid)
     np.save(f"{args.valid_out}_labels", neuroValidLabels)
@@ -66,7 +75,8 @@ if(test_dataset != ''):
     neuroTest = torch.zeros((data_instance_dim, features_dim, timestep_dim))
     neuroTestLabels = torch.zeros((data_instance_dim))
     for i in tqdm(range(data_instance_dim)):
-        neuroTestLabels[i] = test_data[i][1]
+        neuroTest[i] = train_data[i][0]
+        neuroTestLabels[i] = train_data[i][1]
     neuroTest = neuroTest.numpy()
     np.save(args.test_out, neuroTest)
     np.save(f"{args.test_out}_labels", neuroTestLabels)
