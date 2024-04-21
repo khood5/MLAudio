@@ -29,6 +29,28 @@
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Python: SNN Train",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/snn.py",
+            "args": [
+                "-a", "train",
+                "--proc_params", "./config/risp.json",
+                "--eons_params", "./config/eons.json",
+                "--timeseries", "true",
+                "--app_type", "load",
+                "--data_np", "debug.npy",
+                "--labels_np", "debug_labels.npy",
+                "--encoder", "config/encoder.json",
+                "--processes", "0",
+                "--sim_time", "2401",
+                "--epochs", "1000",
+                "--network_filename", "firstRun.json",
+                "--split", "1"
+            ],
+            "console": "integratedTerminal"
         }
     ]
 }

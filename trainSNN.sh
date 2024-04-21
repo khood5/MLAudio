@@ -6,8 +6,8 @@ python snn.py\
 	--eons_params ./config/eons.json\
 	--timeseries true \
 	--app_type load \
-	--data_np neuroTrain.small.npy \
-	--labels_np neuroTrain.small_labels.npy \
+	--data_np debug.npy \
+	--labels_np debug_labels.npy \
 	--encoder config/encoder.json \
 	--processes 16 \
 	--sim_time 2401 \
