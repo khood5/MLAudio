@@ -7,7 +7,7 @@ from sklearn.metrics import f1_score
 import json
 import neuro
 
-def getMulticlassModel():
+def getMulticlassResNetModel():
     resnet18 = models.resnet18()
     resnet18.fc = nn.Sequential(nn.Linear(resnet18.fc.in_features, 2), nn.Softmax(dim=1))# change to binary classification 
     resnet18.conv1 =  nn.Sequential(
@@ -16,7 +16,7 @@ def getMulticlassModel():
                                 ) 
     return resnet18, nn.CrossEntropyLoss()
     
-def getBindayClassification():
+def getBinaryResNetModel():
     resnet18 = models.resnet18()
     resnet18.fc = nn.Sequential(nn.Linear(resnet18.fc.in_features, 1), nn.Sigmoid())# change to binary classification 
     resnet18.conv1 =  nn.Sequential(
@@ -25,7 +25,7 @@ def getBindayClassification():
                                 ) 
     return resnet18, nn.BCELoss()
 
-class ClassifyAudioApp(ClassifyApp):
+class EONSClassifyAudioApp(ClassifyApp):
     def __init__(self, config, X, y):
         super().__init__(config, X, y) 
         if (config["split"] == 0):

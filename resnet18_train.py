@@ -8,7 +8,7 @@ import argparse
 import csv
 import numpy as np
 from torchvision import transforms
-from models import getBindayClassification, getMulticlassModel
+from models import getBinaryResNetModel, getMulticlassResNetModel
 
 def main():
     parser = argparse.ArgumentParser(description='Train ResNet18 on gunshot detection with spectrogram.')
@@ -38,10 +38,10 @@ def main():
     resnet18 = None
     loss_function = None
     if args.model_type == 'b':
-        resnet18, loss_function = getBindayClassification()
+        resnet18, loss_function = getBinaryResNetModel()
         print("Model Binday Classification selected and created") 
     else:
-        resnet18, loss_function = getMulticlassModel()
+        resnet18, loss_function = getMulticlassResNetModel()
         print("Model Multi-Class Classification selected and created")
 
     optimizer = None

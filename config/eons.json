@@ -1,6 +1,6 @@
  {
-    "starting_nodes": 7000,
-    "starting_edges": 24496500,
+    "starting_nodes": 10,
+    "starting_edges": 45,
     "merge_rate": 0,
     "population_size": 25,
     "multi_edges": 1,
@@ -15,7 +15,6 @@
     "net_mutations": { },
     "edge_mutations": { "Weight": 0.7, "Delay": 0.3 },
     "num_best": 3,
-
     "add_node_rate": 0.2,
     "delete_node_rate": 0.5,
     "add_edge_rate": 0.75,

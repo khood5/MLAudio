@@ -1,13 +1,10 @@
 from py_apps.utils.common_utils import read_network
 from py_apps.utils.common_utils import load_json_arg
 from py_apps.utils.neuro_help import *
-from models import ClassifyAudioApp
+from models import EONSClassifyAudioApp
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Classification Application Driver")
-    parser.add_argument("--activity", "-a", required=True, type=str, choices=["train", "test"], help="activity to perform")
-    args = parser.parse_args(["--activity","train"])
     parser = argparse.ArgumentParser(description="Classification Application Driver")
     parser.add_argument("--activity", "-a", required=True, type=str, choices=["train", "test"], help="activity to perform")
     parser.add_argument("--network_filename", default=None, type=str, help="location to store the best network file produced if training or network to load if testing")
@@ -56,7 +53,7 @@ def main():
     config = setup_class_config(args)
     print("Starting training")
     if (args.activity == "train"):
-        app = ClassifyAudioApp(config, X, y)
+        app = EONSClassifyAudioApp(config, X, y)
 
         train_params = {}
         train_params["eons_params"] = eons_params
