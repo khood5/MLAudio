@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import models
-from audioDataLoader import audioDataloader
+from src.audioDataLoader import audioDataloader
 from tqdm import tqdm
 import argparse
 import csv
 import numpy as np
 from torchvision import transforms
-from models import getBinaryResNetModel, getMulticlassResNetModel
+from src.models import getBinaryResNetModel, getMulticlassResNetModel
 
 def main():
     parser = argparse.ArgumentParser(description='Validated ResNet18 on gunshot detection with spectrogram.')
