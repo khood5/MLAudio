@@ -199,3 +199,4 @@ data/gunshotIndex.csv
 data/sortedBackground.csv
 data/sortedGunshots.csv
 data/debugData/**/*
+trash/**/*

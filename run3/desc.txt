@@ -1,6 +1,0 @@
-### Compairing two output neurons to one output neuron. 
-----
-LR:         0.01 \
-epochs:     50 \
-batch size: 50 \
-optimizer: Adam

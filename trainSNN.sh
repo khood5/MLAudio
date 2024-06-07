@@ -1,6 +1,6 @@
 eval "$(conda shell.bash hook)"
 conda activate mlaudio
-python snn.py\
+python eons.py\
 	-a train \
 	--proc_params ./config/risp.json\
 	--eons_params ./config/eons.json\
