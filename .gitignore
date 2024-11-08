@@ -200,3 +200,6 @@ data/sortedBackground.csv
 data/sortedGunshots.csv
 data/debugData/**/*
 trash/**/*
+
+# shotspotter
+shotspotter/data
