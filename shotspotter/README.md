@@ -10,12 +10,19 @@
 - A short clip of audio is taken and used to build the *mosaic* that is fed into the ResNet
 - In this recreation, we'll use fields A (waveform), B (discrete wavelength spectrogram) and possibly E and F too
     - Other fields are related to location data, we are focusing on the classifier
+- Paper classifies on 2-second 12khz clips of audio, we can create these using the scripts
+- Try to match resolution or level of detail on paper's mosaic
+    - See Instructions / Configuration below
 
 
-## Instructions
+## Instructions / Configuration
 - Use `makeBackgroundAudio.py` and `makeGunshotAudio.py` from `MLAudio/data/` to create dataset
     - Make sure to specify sample rate to 12khz (as specified by paper)
-
+- make_mosaic has some constants that can be changed to change output mosaic size
+- Spectrogram 
+    - the `nperseg` parameter in the `scipy.signal.spectrogram` call will determine time bin resolution for our spectrogram
+    - the `nfft` parameter in the `scipy.signal.spectrogram` call will determine frequency bin resolution for our spectrogram
+    - Played around with values until I found `nperseg=8` and `nfft=16` to be reasonably close
 
 
 ## Log

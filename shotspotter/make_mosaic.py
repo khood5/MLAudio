@@ -34,9 +34,9 @@ for f in file_names:
     fig, ax = plt.subplots(dpi=DPI_CONST)
     ax.plot(time, data, color='g')
     ax.axis('off')
+    fig.tight_layout(pad=0.0)
 
     fig.set_size_inches(WIDTH_INCH, HEIGHT_INCH)
-    plt.tight_layout(pad=0.0)
 
     fig.canvas.draw()
     waveform_graph_pixels = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8).reshape((OUT_HEIGHT,OUT_WIDTH, 4))
@@ -49,11 +49,12 @@ for f in file_names:
     freq_data = pywt.wavedec(data, 'haar', level=5)
 
     #https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.spectrogram.html
-    # note this function might be removed
-    f, t, s = spectrogram(freq_data[1], fs=rate, nperseg=32)
+    # NOTE this function might be removed
+    # see README on this
+    f, t, s = spectrogram(freq_data[1], fs=rate, nperseg=8, nfft=16)
 
     fig, ax = plt.subplots(dpi=DPI_CONST)
-    ax.pcolormesh(t, f, 10*np.log10(s), shading='auto', cmap='OrRd')
+    ax.pcolormesh(t, f, 10*np.log10(s), shading='auto', cmap='hot_r')
     ax.axis('off')
     fig.tight_layout(pad=0.0)
 
