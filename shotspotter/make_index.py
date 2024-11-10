@@ -14,6 +14,9 @@ parser.add_argument('-d', '--directory', required=True, help='directory to index
 parser.add_argument('-o', '--output', default=OUTPUT_DIR+'index.csv', help='file path + name of output csv')
 args = parser.parse_args()
 
+if args.directory[-1] != '/':
+    args.directory += '/'
+
 with open(args.output, 'w') as f:
     full_paths = [args.directory+filename+"\n" for filename in os.listdir(args.directory)]
     f.writelines(full_paths)

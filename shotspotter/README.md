@@ -28,3 +28,5 @@
 ## Log
 - Tried converting the audio from 2 channels to 1 using mean, completely destroyed the audio
 - For now just using setting `-sr` to specify sample rate in make background/gunshot scripts
+- Spectrogram and waveform look reasonably close to paper
+- For now denoising is done using `noisereduce` library, work on this more
