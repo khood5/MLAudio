@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
-from scipy.signal import spectrogram #resample
+from scipy.signal import spectrogram, resample
 import numpy as np
 import pywt
 from PIL import Image
@@ -10,9 +10,9 @@ import argparse
 import os
 
 # mosaic resolution constants
-OUT_WIDTH = 300
-OUT_HEIGHT = 60
-DPI_CONST = 100
+OUT_WIDTH = 450
+OUT_HEIGHT = 90
+DPI_CONST = 200
 WIDTH_INCH = OUT_WIDTH / DPI_CONST
 HEIGHT_INCH = OUT_HEIGHT / DPI_CONST
 
@@ -57,6 +57,8 @@ for f in file_names:
 
         # FREQUENCY GRAPH
         data = noisereduce.reduce_noise(y=data, sr=rate)
+        # NOTE: we downsample first to reduce time bins to an amount that makes sense
+        #data = resample(data, rate)
         # NOTE: we use db1 wavelet family because it perfectly halves at each level and is easier to plot
         coefficients = pywt.wavedec(data, 'db1', level=DWT_LEVELS)
         [print(c.shape) for c in coefficients]
@@ -68,8 +70,8 @@ for f in file_names:
         cc = np.abs(np.array([coefficients[-1]])) # start at coefficient level with most elements
         for i in range(DWT_LEVELS - 1):
             current_coef = coefficients[DWT_LEVELS - 1 - i]
-            r = np.abs(np.array([np.repeat(current_coef, pow(2, i + 1))])) 
-            r = r[:, 0:12000] # tim off little bit at the end, because some of the coefficients don't have exactly previous / 2 elements
+            r = np.abs(np.array([np.repeat(current_coef, pow(2, i + 1))]))
+            r = r[:, 0:rate] # tim off little bit at the end, because some of the coefficients don't have exactly previous / 2 elements
             #a = np.abs([cc, r])
             #print(a.shape)
             cc = np.concatenate([cc, r])
@@ -78,11 +80,11 @@ for f in file_names:
         print(cc.shape)
         
         # X-axis has a linear scale (time)
-        x = np.linspace(start=0, stop=1, num=24000//2)
+        x = np.linspace(start=0, stop=1, num=rate*2//2)
         # Y-axis has a logarithmic scale (frequency)
         y = np.linspace(start=DWT_LEVELS-1, stop=0, num=DWT_LEVELS)
         X, Y = np.meshgrid(x, y)
-        ax.pcolormesh(X, Y, cc, cmap='hot_r')
+        ax.pcolormesh(X, Y, cc, cmap='copper')
 
         #ax.pcolormesh(freq_data,  shading='auto', cmap='hot_r')
         ax.axis('off')
@@ -104,8 +106,6 @@ for f in file_names:
 
         output.save(args.output+'/mosaic_'+raw_f_name+'.png')
         index_dict[args.output+'/mosaic_'+raw_f_name+'.png'] = args.label
-
-        exit()
 
     except Exception as e:
         print('Error: ', e)
