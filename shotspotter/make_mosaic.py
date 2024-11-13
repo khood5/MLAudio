@@ -16,6 +16,9 @@ DPI_CONST = 100
 WIDTH_INCH = OUT_WIDTH / DPI_CONST
 HEIGHT_INCH = OUT_HEIGHT / DPI_CONST
 
+# other constants
+DWT_LEVELS = 7
+
 parser = argparse.ArgumentParser(description='''generate image mosaics to be fed into resnet.
 note that this will join indexes with same name to make it easier to input.''')
 parser.add_argument('-s', '--source_dir', required=True, help='source directory with sound files')
@@ -54,15 +57,34 @@ for f in file_names:
 
         # FREQUENCY GRAPH
         data = noisereduce.reduce_noise(y=data, sr=rate)
-        freq_data = pywt.wavedec(data, 'haar', level=5)
-
-        #https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.spectrogram.html
-        # NOTE this function might be removed
-        # see README on this
-        f, t, s = spectrogram(freq_data[1], fs=rate, nperseg=8, nfft=16)
+        # NOTE: we use db1 wavelet family because it perfectly halves at each level and is easier to plot
+        coefficients = pywt.wavedec(data, 'db1', level=DWT_LEVELS)
+        [print(c.shape) for c in coefficients]
+        print()
 
         fig, ax = plt.subplots(dpi=DPI_CONST)
-        ax.pcolormesh(t, f, 10*np.log10(s), shading='auto', cmap='hot_r')
+
+        # https://stackoverflow.com/questions/64563423/plotting-dwt-scaleogram-in-python
+        cc = np.abs(np.array([coefficients[-1]])) # start at coefficient level with most elements
+        for i in range(DWT_LEVELS - 1):
+            current_coef = coefficients[DWT_LEVELS - 1 - i]
+            r = np.abs(np.array([np.repeat(current_coef, pow(2, i + 1))])) 
+            r = r[:, 0:12000] # tim off little bit at the end, because some of the coefficients don't have exactly previous / 2 elements
+            #a = np.abs([cc, r])
+            #print(a.shape)
+            cc = np.concatenate([cc, r])
+            #print(" --- ")
+
+        print(cc.shape)
+        
+        # X-axis has a linear scale (time)
+        x = np.linspace(start=0, stop=1, num=24000//2)
+        # Y-axis has a logarithmic scale (frequency)
+        y = np.linspace(start=DWT_LEVELS-1, stop=0, num=DWT_LEVELS)
+        X, Y = np.meshgrid(x, y)
+        ax.pcolormesh(X, Y, cc, cmap='hot_r')
+
+        #ax.pcolormesh(freq_data,  shading='auto', cmap='hot_r')
         ax.axis('off')
         fig.tight_layout(pad=0.0)
 
@@ -83,9 +105,12 @@ for f in file_names:
         output.save(args.output+'/mosaic_'+raw_f_name+'.png')
         index_dict[args.output+'/mosaic_'+raw_f_name+'.png'] = args.label
 
+        exit()
+
     except Exception as e:
         print('Error: ', e)
         print(f'Skipping {raw_f_name}')
+        exit()
 
 # write index
 with open(args.index_output, 'a') as f:
