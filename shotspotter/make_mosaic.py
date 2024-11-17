@@ -106,7 +106,6 @@ for f in file_names:
     except Exception as e:
         print('Error: ', e)
         print(f'Skipping {raw_f_name}')
-        exit()
 
 # write index
 with open(args.index_output, 'a') as f:

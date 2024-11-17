@@ -3,6 +3,7 @@ import numpy as np
 import random
 from torch.utils.data import Dataset
 import torch
+from torchvision.transforms import ToTensor
 
 # expects index csv where column 1 is file path and column 2 is class
 def save_from_index(index_path, output_path):
@@ -32,6 +33,8 @@ def save_from_index(index_path, output_path):
         print('Successfully written testing.npz')
 
 
+# TODO: FIX HERE, we can't load and apply transform all at once, do it in getitem per item
+
 # dataset class
 class MosaicDataset(Dataset):
     def __init__(self, path_to_npz, ds_type):
@@ -39,22 +42,27 @@ class MosaicDataset(Dataset):
         print(f"Loading {self.type} dataset from \'{path_to_npz}\'")
         arrays = np.load(path_to_npz)
 
-        self.data = torch.from_numpy(arrays['images'])
+        self.data = arrays['images']
         self.labels = torch.from_numpy(arrays['labels'])
+
+        # go from HxWxC to normalized (0-1) CxHxW for input to ResNet
+        self.data = [ToTensor()(d) for d in self.data]
+        self.data = torch.stack(self.data)
 
         if torch.cuda.is_available():
             print('Moving tensors to GPU')
             self.data = self.data.to('cuda')
             self.labels = self.labels.to('cuda')
-
+        
     def __len__(self):
         return self.labels.shape[0]
 
     def __getitem__(self, index):
-        return [self.data[0], self.labels[0]]
+        return [self.data[index], self.labels[index]]
 
 
 if __name__ == '__main__':
-    #save_from_index('/home/joao/dev/MLAudio/shotspotter/data/mosaic_index.csv', '/home/joao/dev/MLAudio/shotspotter/data/dataset')
+    save_from_index('/home/joao/dev/MLAudio/shotspotter/data/mosaic_index.csv', '/home/joao/dev/MLAudio/shotspotter/data/dataset')
 
-    ds = MosaicDataset('data/dataset/training.npz', 'training')
+    #ds = MosaicDataset('data/dataset/training.npz', 'training')
+    #print(ds[0])
