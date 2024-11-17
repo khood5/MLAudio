@@ -61,8 +61,8 @@ for f in file_names:
         #data = resample(data, rate)
         # NOTE: we use db1 wavelet family because it perfectly halves at each level and is easier to plot
         coefficients = pywt.wavedec(data, 'db1', level=DWT_LEVELS)
-        [print(c.shape) for c in coefficients]
-        print()
+        #[print(c.shape) for c in coefficients]
+        #print()
 
         fig, ax = plt.subplots(dpi=DPI_CONST)
 
@@ -77,14 +77,10 @@ for f in file_names:
             cc = np.concatenate([cc, r])
             #print(" --- ")
 
-        print(cc.shape)
-        
-        # X-axis has a linear scale (time)
         x = np.linspace(start=0, stop=1, num=rate*2//2)
-        # Y-axis has a logarithmic scale (frequency)
         y = np.linspace(start=DWT_LEVELS-1, stop=0, num=DWT_LEVELS)
         X, Y = np.meshgrid(x, y)
-        ax.pcolormesh(X, Y, cc, cmap='copper')
+        ax.pcolormesh(X, Y, cc, cmap='RdYlGn')
 
         #ax.pcolormesh(freq_data,  shading='auto', cmap='hot_r')
         ax.axis('off')

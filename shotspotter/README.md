@@ -19,11 +19,6 @@
 - Use `makeBackgroundAudio.py` and `makeGunshotAudio.py` from `MLAudio/data/` to create dataset
     - Make sure to specify sample rate to 12khz (as specified by paper)
 - make_mosaic has some constants that can be changed to change output mosaic size
-- Spectrogram 
-    - the `nperseg` parameter in the `scipy.signal.spectrogram` call will determine time bin resolution for our spectrogram
-    - the `nfft` parameter in the `scipy.signal.spectrogram` call will determine frequency bin resolution for our spectrogram
-    - Played around with values until I found `nperseg=8` and `nfft=16` to be reasonably close
-
 
 ## Log
 - Tried converting the audio from 2 channels to 1 using mean, completely destroyed the audio
