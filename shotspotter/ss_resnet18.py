@@ -46,24 +46,8 @@ for epoch in range(20):
     print(f'Training with {len(training_set)} training samples')
     print(f'Currently on epoch {epoch}')
 
-    count = 0
-    for mosaics, labels in training_loader:
-        count += 1
-        optimizer.zero_grad() 
-
-        if torch.cuda.is_available():
-            mosaics = mosaics.to('cuda')
-            labels = labels.to('cuda')
-
-        out = model(mosaics)
-        loss = loss_func(out, labels)
-
-        loss.backward()
-        optimizer.step()
-
-        if count % 50 == 0: print(f"Current loss: {loss}")
-
     # run accuracy on validation
+    # TODO: breakdown by class accuracy
     total, correct = 0, 0
     with torch.no_grad():
         for data in validation_loader:
@@ -82,3 +66,20 @@ for epoch in range(20):
 
     print(f'Total is {total} and correct is {correct}')
     print(f'Accuracy is {correct / total}')
+
+    count = 0
+    for mosaics, labels in training_loader:
+        count += 1
+        optimizer.zero_grad() 
+
+        if torch.cuda.is_available():
+            mosaics = mosaics.to('cuda')
+            labels = labels.to('cuda')
+
+        out = model(mosaics)
+        loss = loss_func(out, labels)
+
+        loss.backward()
+        optimizer.step()
+
+        if count % 50 == 0: print(f"Current loss: {loss}")

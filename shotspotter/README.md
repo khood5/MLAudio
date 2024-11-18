@@ -4,6 +4,10 @@
 - This is based on the following paper:  [Precision and accuracy of acoustic gunshot location in an urban environment](https://arxiv.org/pdf/2108.07377)
     - See section `III. C.` for details
 
+## Todo:
+- Find learning rate, work on class imbalance (maybe), possibly generate larger dataset
+- Measure audio sample quality
+- Find best balance of resolution and wavelet type
 
 ## Notes
 - It looks like they have some criteria to determine when a sound is a potential gunshot
