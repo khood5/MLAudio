@@ -35,7 +35,7 @@ def save_from_index(index_path, output_path):
 
 # dataset class
 class MosaicDataset(Dataset):
-    def __init__(self, path_to_npz, ds_type):
+    def __init__(self, path_to_npz, ds_type, rgb_mean=None, rgb_std=None):
         print(f"Preparing to load {ds_type} dataset from \'{path_to_npz}\'")
         self.type = ds_type
         arrays = np.load(path_to_npz)
@@ -49,14 +49,19 @@ class MosaicDataset(Dataset):
         self.transform = ToTensor()
 
         # Calculate mean and std for each channel
-        print("Computing means and stds for each rgb channel...")
-        rgb_mean = [self.data[:,:,:,0].mean()/255, self.data[:,:,:,1].mean()/255, self.data[:,:,:,2].mean()/255]
-        rgb_mean = [i.item() for i in rgb_mean] # convert from 1x1 np array to floats
+        self.rgb_mean = rgb_mean
+        if rgb_mean is None:
+            print("Computing mean for each rgb channel...")
+            self.rgb_mean = [self.data[:,:,:,0].mean()/255, self.data[:,:,:,1].mean()/255, self.data[:,:,:,2].mean()/255]
+            self.rgb_mean = [i.item() for i in self.rgb_mean] # convert from 1x1 np array to floats
 
-        rgb_std = [self.data[:,:,:,0].std()/255, self.data[:,:,:,1].std()/255, self.data[:,:,:,2].std()/255]
-        rgb_std = [i.item() for i in rgb_std] # convert from 1x1 np array to floats
+        self.rgb_std = rgb_std
+        if rgb_std is None:
+            print("Computing std for each rgb channel...")
+            self.rgb_std = [self.data[:,:,:,0].std()/255, self.data[:,:,:,1].std()/255, self.data[:,:,:,2].std()/255]
+            self.rgb_std = [i.item() for i in self.rgb_std] # convert from 1x1 np array to floats
         
-        self.normalize = Normalize(mean=rgb_mean, std=rgb_std)
+        self.normalize = Normalize(mean=self.rgb_mean, std=self.rgb_std)
 
     def __len__(self):
         return self.labels.shape[0]
@@ -71,5 +76,6 @@ class MosaicDataset(Dataset):
 if __name__ == '__main__':
     #save_from_index('/home/joao/dev/MLAudio/shotspotter/data/mosaic_index.csv', '/home/joao/dev/MLAudio/shotspotter/data/dataset')
 
-    ds = MosaicDataset('data/dataset/training.npz', 'training')
-    print(ds[0])
+    ds = MosaicDataset('data/dataset/10k samples/training.npz', 'training')
+    print(ds.rgb_mean)
+    print(ds.rgb_std)

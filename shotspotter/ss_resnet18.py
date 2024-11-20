@@ -13,6 +13,10 @@ DEVICE = (
 )
 BATCH_SIZE = 64
 
+# mean and standard deviation for rgb channels of our dataset, computed from 10k samples
+RGB_MEAN = [0.6664889994497545, 0.4612734419167714, 0.3871200549055969]
+RGB_STD = [0.35835277513458436, 0.4037847429095522, 0.40664457397825116]
+
 # NOTE: by default, model expects mini-batches of (3xHxW) with 3RGB channels
 model = models.resnet18(weights=None)
 
@@ -25,10 +29,10 @@ model.fc = Linear(in_features=512, out_features=2)
 # NOTE: this HAS  to come after chaning the layers otherwise the altered layers' weights are still on cpu
 model = model.to(DEVICE)
 
-training_set = MosaicDataset("data/dataset/training.npz", 'training')
+training_set = MosaicDataset("data/dataset/training.npz", 'training', rgb_mean=RGB_MEAN, rgb_std=RGB_STD)
 training_loader = DataLoader(training_set, batch_size=BATCH_SIZE, shuffle=True)
 
-validation_set = MosaicDataset("data/dataset/validation.npz", 'validation')
+validation_set = MosaicDataset("data/dataset/validation.npz", 'validation', rgb_mean=RGB_MEAN, rgb_std=RGB_STD)
 validation_loader = DataLoader(validation_set, batch_size=BATCH_SIZE, shuffle=True)
 
 #out = model.forward(torch.stack([ds[0][0], ds[1][0]]).to(DEVICE))
@@ -40,7 +44,7 @@ validation_loader = DataLoader(validation_set, batch_size=BATCH_SIZE, shuffle=Tr
 
 # Train
 loss_func = nn.CrossEntropyLoss()
-optimizer = SGD(model.parameters(), lr=0.01)
+optimizer = SGD(model.parameters(), lr=0.1)
 
 for epoch in range(20):
     print(f'Training with {len(training_set)} training samples')
@@ -68,6 +72,7 @@ for epoch in range(20):
     print(f'Accuracy is {correct / total}')
 
     count = 0
+    loss_sum = 0
     for mosaics, labels in training_loader:
         count += 1
         optimizer.zero_grad() 
@@ -82,4 +87,5 @@ for epoch in range(20):
         loss.backward()
         optimizer.step()
 
-        if count % 50 == 0: print(f"Current loss: {loss}")
+        loss_sum += loss
+        if count % 50 == 0: print(f"Running loss: {loss_sum/count}")
