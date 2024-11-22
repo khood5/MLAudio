@@ -5,9 +5,13 @@
     - See section `III. C.` for details
 
 ## Todo:
-- Find learning rate, work on class imbalance (maybe), possibly generate larger dataset
+- Fix mosaic creator code to work with sample rates that aren't exactly 12khz
+    - Maybe just resample to 12khz
+    - Fix code that plots the DWT to work with dbN for N >= 2
+    - Generate mosaics for extreme samples.
 - Measure audio sample quality
 - Find best balance of resolution and wavelet type
+- ResNet-152
 
 ## Notes
 - It looks like they have some criteria to determine when a sound is a potential gunshot

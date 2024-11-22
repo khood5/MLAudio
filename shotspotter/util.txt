@@ -1,0 +1,1 @@
+python ~/dev/MLAudio/shotspotter/make_mosaic.py -s . -o ~/dev/MLAudio/shotspotter/data/extremes/mosaics -l 0 -i ~/dev/MLAudio/shotspotter/data/extremes/mosaic_index.csv
