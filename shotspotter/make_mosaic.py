@@ -9,6 +9,8 @@ import noisereduce
 import argparse
 import os
 
+# NOTE: in the state that this script is in, it will only work on db1 wavelet family, for 2 second long 12khz audio
+
 # mosaic resolution constants
 OUT_WIDTH = 450
 OUT_HEIGHT = 90
@@ -38,6 +40,12 @@ for f in file_names:
         if len(data.shape) == 2: # if 2 channels 
             data = data[:, 0] # take only left channel
 
+        # temporary resample to 12khz
+        if rate != 12000:
+            duration_secs = len(data)/rate
+            rate = 12000
+            data = resample(data, int(duration_secs*rate))
+
         # WAVEFORM GRAPH
         time = np.arange(data.shape[0])/rate
 
@@ -57,9 +65,7 @@ for f in file_names:
 
         # FREQUENCY GRAPH
         data = noisereduce.reduce_noise(y=data, sr=rate)
-        # NOTE: we downsample first to reduce time bins to an amount that makes sense
-        #data = resample(data, rate)
-        # NOTE: we use db1 wavelet family because it perfectly halves at each level and is easier to plot
+        # NOTE: we use db1 wavelet family (for now) because it perfectly halves at each level and is easier to plot
         coefficients = pywt.wavedec(data, 'db1', level=DWT_LEVELS)
         #[print(c.shape) for c in coefficients]
         #print()

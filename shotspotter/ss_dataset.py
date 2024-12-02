@@ -74,8 +74,8 @@ class MosaicDataset(Dataset):
 
 
 if __name__ == '__main__':
-    #save_from_index('/home/joao/dev/MLAudio/shotspotter/data/mosaic_index.csv', '/home/joao/dev/MLAudio/shotspotter/data/dataset')
+    save_from_index('/home/joao/dev/MLAudio/shotspotter/data/mosaic_index.csv', '/home/joao/dev/MLAudio/shotspotter/data/dataset')
 
-    ds = MosaicDataset('data/dataset/10k samples/training.npz', 'training')
-    print(ds.rgb_mean)
-    print(ds.rgb_std)
+    #ds = MosaicDataset('data/dataset/10k samples/training.npz', 'training')
+    #print(ds.rgb_mean)
+    #print(ds.rgb_std)
