@@ -15,3 +15,7 @@ DEVICE = (
 model_18 = models.resnet18(weights=None)
 model_18.conv1 = nn.Conv2d(3, 64, (7,7), (2,2), (3,3), bias=False)
 model_18.fc = Linear(in_features=512, out_features=2)
+
+model_152 = models.resnet152(weights=None)
+model_152.conv1 = nn.Conv2d(3, 64, (7,7), (2,2), (3,3), bias=False)
+model_152.fc = Linear(in_features=2048, out_features=2)

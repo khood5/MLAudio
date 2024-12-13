@@ -7,24 +7,13 @@ from torch.utils.data import DataLoader
 from torch.optim import SGD, AdamW
 
 from ss_dataset import MosaicDataset
+from common import RGB_MEAN, RGB_STD, DEVICE
+from common import model_152 as model
 
 DEVICE = (
     "cuda" if torch.cuda.is_available() else "cpu"
 )
 BATCH_SIZE = 6
-
-# mean and standard deviation for rgb channels of our dataset, computed from 10k samples
-RGB_MEAN = [0.6664889994497545, 0.4612734419167714, 0.3871200549055969]
-RGB_STD = [0.35835277513458436, 0.4037847429095522, 0.40664457397825116]
-
-# NOTE: by default, model expects mini-batches of (3xHxW) with 3RGB channels
-model = models.resnet152(weights=None)
-
-# no change here (for now)
-model.conv1 = nn.Conv2d(3, 64, (7,7), (2,2), (3,3), bias=False)
-
-# binary classification
-model.fc = Linear(in_features=2048, out_features=2)
 
 # NOTE: this HAS  to come after chaning the layers otherwise the altered layers' weights are still on cpu
 model = model.to(DEVICE)
@@ -34,13 +23,6 @@ training_loader = DataLoader(training_set, batch_size=BATCH_SIZE, shuffle=True)
 
 validation_set = MosaicDataset("data/dataset/validation.npz", 'validation', rgb_mean=RGB_MEAN, rgb_std=RGB_STD)
 validation_loader = DataLoader(validation_set, batch_size=BATCH_SIZE, shuffle=True)
-
-#out = model.forward(torch.stack([ds[0][0], ds[1][0]]).to(DEVICE))
-#out = model.forward(torch.unsqueeze(ds[0][0], 0).to(DEVICE))
-#print(out)
-#out = model.forward(torch.unsqueeze(ds[3][0], 0).to(DEVICE))
-#print(out)
-
 
 # Train
 loss_func = nn.CrossEntropyLoss()
@@ -96,4 +78,12 @@ for epoch in range(30):
         optimizer.step()
 
         loss_sum += loss
-        if count % 50 == 0: print(f"Running loss: {loss_sum/count}")
+        if count % 50 == 0:
+            running_loss = loss_sum/count
+            # write loss to csv
+            with open('./models/resnet152.txt', 'a') as f:
+                f.write(f'{epoch},{running_loss}\n')
+
+            print(f"Running loss: {running_loss}")
+
+torch.save(model.state_dict(), './models/resnet152_model')
