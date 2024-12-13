@@ -7,24 +7,10 @@ from torch.utils.data import DataLoader
 from torch.optim import SGD, AdamW
 
 from ss_dataset import MosaicDataset
+from common import RGB_MEAN, RGB_STD, DEVICE
+from common import model_18 as model
 
-DEVICE = (
-    "cuda" if torch.cuda.is_available() else "cpu"
-)
 BATCH_SIZE = 32
-
-# mean and standard deviation for rgb channels of our dataset, computed from 10k samples
-RGB_MEAN = [0.6664889994497545, 0.4612734419167714, 0.3871200549055969]
-RGB_STD = [0.35835277513458436, 0.4037847429095522, 0.40664457397825116]
-
-# NOTE: by default, model expects mini-batches of (3xHxW) with 3RGB channels
-model = models.resnet18(weights=None)
-
-# no change here (for now)
-model.conv1 = nn.Conv2d(3, 64, (7,7), (2,2), (3,3), bias=False)
-
-# binary classification
-model.fc = Linear(in_features=512, out_features=2)
 
 # NOTE: this HAS  to come after chaning the layers otherwise the altered layers' weights are still on cpu
 model = model.to(DEVICE)
@@ -96,4 +82,13 @@ for epoch in range(30):
         optimizer.step()
 
         loss_sum += loss
-        if count % 50 == 0: print(f"Running loss: {loss_sum/count}")
+        if count % 50 == 0:
+            running_loss = loss_sum/count
+            # write loss to csv
+            with open('./models/resnet18.txt', 'a') as f:
+                f.write(f'{epoch},{running_loss}\n')
+
+            print(f"Running loss: {running_loss}")
+
+
+torch.save(model.state_dict(), './models/resnet18_model')

@@ -206,3 +206,4 @@ shotspotter/data
 shotspotter/backgroundIndex.csv
 shotspotter/gunshotIndex.csv
 shotspotter/mosaicIndex.csv
+shotspotter/models
