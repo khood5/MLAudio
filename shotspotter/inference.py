@@ -3,7 +3,7 @@ import torch
 from ss_dataset import MosaicDataset
 from torch.utils.data import DataLoader
 
-from common import RGB_MEAN, RGB_STD, DEVICE, model_18
+from common import RGB_MEAN, RGB_STD, DEVICE, model_18, model_152
 
 BATCH_SIZE=32
 
@@ -18,7 +18,7 @@ testing_loader = DataLoader(testing_set, batch_size=BATCH_SIZE, shuffle=True)
 if args.type == '18':
     model = model_18
 else:
-    pass #152
+    model = model_152
 
 model.load_state_dict(torch.load(args.model_path, weights_only=True))
 model = model.to(DEVICE)
