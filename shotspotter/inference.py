@@ -5,13 +5,26 @@ from torch.utils.data import DataLoader
 import time
 
 from common import RGB_MEAN, RGB_STD, DEVICE, model_18, model_152
-
-BATCH_SIZE=32
+from power import watt_now
+import threading
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-t', '--type', choices=['18', '152'], required=True)
 parser.add_argument('-m', '--model_path', required=True)
+parser.add_argument('-o', '--out_path', required=True)
 args = parser.parse_args()
+
+# thread for measuring power consumption
+stop = threading.Event()
+
+def record_consumption():
+    while not stop.is_set():
+        with open(args.out_path, 'a') as f:
+            f.write(f'{watt_now()}\n')
+
+        time.sleep(3)
+
+BATCH_SIZE=32
 
 testing_set = MosaicDataset("data/dataset/testing.npz", 'testing', rgb_mean=RGB_MEAN, rgb_std=RGB_STD)
 testing_loader = DataLoader(testing_set, batch_size=BATCH_SIZE, shuffle=True)
@@ -26,8 +39,11 @@ model.load_state_dict(torch.load(args.model_path, weights_only=True, map_locatio
 model = model.to(DEVICE)
 model.eval() # disables batch norm
 
-t = time.time()
+# run our consumption recorder
+thr = threading.Thread(target=record_consumption)
+thr.start()
 
+t = time.time()
 correct = 0
 total = 0
 with torch.no_grad():
@@ -44,6 +60,8 @@ with torch.no_grad():
         total += BATCH_SIZE
 
 t1 = time.time()
+stop.set()
+thr.join()
 
 print(f'Accuracy on test set: {100 * correct / total} %')
 print(f'Total inference time: {t1-t:.3f}')
