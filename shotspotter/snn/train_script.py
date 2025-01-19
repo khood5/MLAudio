@@ -14,11 +14,16 @@ import time
 import functools
 import json
 
+# TODO: loading best network and injecting it into population
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-p', '--num_processes', required=True)
 parser.add_argument('-d', '--dataset_path', required=True)
 parser.add_argument('-l', '--log_path', required=True)
 parser.add_argument('-e', '--epoch_count', required=True)
+parser.add_argument('--synapse_count', required=True)
+parser.add_argument('--hidden_count', required=True)
+parser.add_argument('--num_mutations', required=True)
 
 args = parser.parse_args()
 
@@ -39,8 +44,8 @@ s2s.transform = torchaudio.transforms.MelSpectrogram(**s2s._default_spec_kwargs)
 
 NUM_INPUT_NEURONS = 80 # see paper
 NUM_OUTPUT_NEURONS = 2
-NUM_SYNAPSES = 1000
-NUM_HIDDEN_NEURONS = 250
+NUM_SYNAPSES = int(args.synapse_count)
+NUM_HIDDEN_NEURONS = int(args.hidden_count)
 POP_SIZE = 70
 
 MOA = neuro.MOA()
@@ -71,7 +76,7 @@ eons_param = {
     "tournament_size_factor": 0.1,
     "tournament_best_net_factor": 0.9,
     "random_factor": 0.10,
-    "num_mutations": 10,
+    "num_mutations": int(args.num_mutations),
     "node_mutations": { "Threshold": 1.0 },
     "net_mutations": { },
     "edge_mutations": { "Weight": 0.65 , "Delay": 0.35,  },
