@@ -223,7 +223,7 @@ for i in range(EPOCH_COUNT):
     print(f'Validation set accuracy for best network: {validation_fit/(VALIDATION_SET_SIZE):.2f}')
 
     # write best network on validation set to file
-    if best_fit_validation_log[-1] > max(best_fit_validation_log[:-1]):
+    if len(best_fit_validation_log) == 1 or best_fit_validation_log[-1] > max(best_fit_validation_log[:-1]):
         print(f'Writing best network to {args.best_net_path}')
         with open(args.best_net_path, 'w') as f:
             json.dump(best_net.as_json(), f)
