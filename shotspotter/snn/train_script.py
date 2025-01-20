@@ -15,10 +15,12 @@ import functools
 import json
 
 # TODO: loading best network and injecting it into population
+# TODO: also, look into how we are reading filenames to ensure randomness
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-p', '--num_processes', required=True)
 parser.add_argument('-d', '--dataset_path', required=True)
+parser.add_argument('-b', '--best_net_path', required=True) # json for bet network path
 parser.add_argument('-l', '--log_path', required=True)
 parser.add_argument('-e', '--epoch_count', required=True)
 parser.add_argument('--synapse_count', required=True)
@@ -222,7 +224,7 @@ for i in range(EPOCH_COUNT):
 
     # write best network on validation set to file
     if best_fit_validation_log[-1] > max(best_fit_validation_log):
-        with open('best_network.json', 'w') as f:
+        with open(args.best_net_path, 'w') as f:
             json.dump(best_net.as_json(), f)
 
     # let's also save our fitness logs
