@@ -13,6 +13,7 @@ import multiprocessing
 import time
 import functools
 import json
+from common import risp_config, read_spikes_from_disk, network_details
 
 # TODO: loading best network and injecting it into population
 # TODO: also, look into how we are reading filenames to ensure randomness
@@ -26,6 +27,8 @@ parser.add_argument('-e', '--epoch_count', required=True)
 parser.add_argument('--synapse_count', required=True)
 parser.add_argument('--hidden_count', required=True)
 parser.add_argument('--num_mutations', required=True)
+parser.add_argument('--random_factor', default='0.10', required=False)
+parser.add_argument('--mutation_rate', default='0.9', required=False)
 
 args = parser.parse_args()
 
@@ -55,17 +58,7 @@ MOA.seed(23456789, '')
 
 NUM_PROCESSES = int(args.num_processes)
 
-# Configure RISP and EONS
-risp_config = {
-  "min_weight": -1,
-  "max_weight": 1,
-  "min_threshold": -1,
-  "max_threshold": 1,
-  "min_potential": -1,
-  "max_delay": 10,
-  "discrete": False
-}
-
+# Configure EONS
 eons_param = {
     "starting_nodes": NUM_HIDDEN_NEURONS,
     "starting_edges": NUM_SYNAPSES,
@@ -73,11 +66,11 @@ eons_param = {
     "population_size": POP_SIZE,
     "multi_edges": 0,
     "crossover_rate": 0.9,
-    "mutation_rate": 0.9,
+    "mutation_rate": int(args.mutation_rate),
     "selection_type": "tournament",
     "tournament_size_factor": 0.1,
     "tournament_best_net_factor": 0.9,
-    "random_factor": 0.10,
+    "random_factor": float(args.random_factor),
     "num_mutations": int(args.num_mutations),
     "node_mutations": { "Threshold": 1.0 },
     "net_mutations": { },
@@ -96,10 +89,6 @@ proc = risp.Processor(risp_config)
 eons_inst = eons.EONS(eons_param)
 
 # Read data
-def read_spikes_from_disk(path):
-    data = np.load(path)
-    return data['train_set'], data['train_labels'], data['validation_set'], data['validation_labels'], data['test_set'], data['test_labels']
-
 training_spikes, training_labels, validation_spikes, validation_labels, test_spikes, test_labels = read_spikes_from_disk(args.dataset_path)
 
 # set up template network  (inputs and outputs) for eons
@@ -120,27 +109,6 @@ proc.load_network(template_net)
 # track neuron updates
 for output_id in template_net.as_json()['Outputs']:
     proc.track_neuron_events(output_id)
-
-# UTILS -------------------------------------------------------------------------------
-
-def network_details(nw, log_json=False):
-    net_json = nw.as_json()
-
-    if log_json:
-        print(net_json)
-    
-    print(f'Network has {len(net_json["Edges"])} synapses and {len(net_json["Nodes"])} neurons')
-
-    # check if all out nodes have an incoming synapse
-    out_ids = net_json['Outputs']
-    for edge in net_json['Edges']:
-        if edge['to'] in out_ids:
-            out_ids.remove(edge['to'])
-
-    if len(out_ids) == 0:
-        print('All outputs have incoming connections')
-    else:
-        print(f'Outputs {out_ids} have no incoming connections')
 
 # TRAINING -------------------------------------------------------------------------------------------
 
