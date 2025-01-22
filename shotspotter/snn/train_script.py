@@ -71,7 +71,7 @@ eons_param = {
     "tournament_size_factor": 0.1,
     "tournament_best_net_factor": 0.9,
     "random_factor": float(args.random_factor),
-    "num_mutations": int(args.num_mutations),
+    "num_mutations": float(args.num_mutations),
     "node_mutations": { "Threshold": 1.0 },
     "net_mutations": { },
     "edge_mutations": { "Weight": 0.65 , "Delay": 0.35,  },
