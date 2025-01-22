@@ -212,3 +212,7 @@ shotspotter/18out.txt
 shotspotter/152consumption.txt
 shotspotter/snn/env.sh
 shotspotter/snn/data
+shotspotter/snn/.idea
+shotspotter/snn/best_network.json
+shotspotter/snn/best_net.json
+shotspotter/snn/best_net.json:Zone.Identifier
