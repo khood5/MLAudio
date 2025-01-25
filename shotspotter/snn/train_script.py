@@ -29,6 +29,8 @@ parser.add_argument('--hidden_count', required=True)
 parser.add_argument('--num_mutations', required=True)
 parser.add_argument('--random_factor', default='0.10', required=False)
 parser.add_argument('--mutation_rate', default='0.9', required=False)
+parser.add_argument('--mutations_weights', default='0.75/0.25/0.75/0.25/2.5/2.5/0', required=False, 
+    help='7 \'/\' separated values for mutation weights, order is: add_node, delete_node, add_edge, delete_edge, node_params, edge_params, net_params')
 
 args = parser.parse_args()
 
@@ -59,6 +61,13 @@ MOA.seed(23456789, '')
 NUM_PROCESSES = int(args.num_processes)
 
 # Configure EONS
+mut_weight_values = args.mutation_weights.split('/')
+if len(mut_weight_values) != 7:
+    print('Invalid input for mutations_weights (see default value in script, and check -h)')
+    exit()
+
+mut_weight_values = [float(w) for w in mut_weight_values]
+
 eons_param = {
     "starting_nodes": NUM_HIDDEN_NEURONS,
     "starting_edges": NUM_SYNAPSES,
