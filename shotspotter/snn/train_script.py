@@ -75,7 +75,7 @@ eons_param = {
     "population_size": POP_SIZE,
     "multi_edges": 0,
     "crossover_rate": 0.9,
-    "mutation_rate": int(args.mutation_rate),
+    "mutation_rate": float(args.mutation_rate),
     "selection_type": "tournament",
     "tournament_size_factor": 0.1,
     "tournament_best_net_factor": 0.9,
