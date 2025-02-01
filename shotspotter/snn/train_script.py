@@ -61,12 +61,12 @@ MOA.seed(23456789, '')
 NUM_PROCESSES = int(args.num_processes)
 
 # Configure EONS
-mut_weight_values = args.mutation_weights.split('/')
-if len(mut_weight_values) != 7:
-    print('Invalid input for mutations_weights (see default value in script, and check -h)')
-    exit()
+# mut_weight_values = args.mutations_weights.split('/')
+# if len(mut_weight_values) != 7:
+#     print('Invalid input for mutations_weights (see default value in script, and check -h)')
+#     exit()
 
-mut_weight_values = [float(w) for w in mut_weight_values]
+# mut_weight_values = [float(w) for w in mut_weight_values]
 
 eons_param = {
     "starting_nodes": NUM_HIDDEN_NEURONS,
