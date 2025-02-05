@@ -15,13 +15,12 @@ import functools
 import json
 from common import risp_config, read_spikes_from_disk, network_details
 
-# TODO: loading best network and injecting it into population
 # TODO: also, look into how we are reading filenames to ensure randomness
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-p', '--num_processes', required=True)
 parser.add_argument('-d', '--dataset_path', required=True)
-parser.add_argument('-b', '--best_net_path', required=True) # json for bet network path
+parser.add_argument('-b', '--best_net_path', required=True) # json for best network path
 parser.add_argument('-l', '--log_path', required=True)
 parser.add_argument('-e', '--epoch_count', required=True)
 parser.add_argument('--synapse_count', required=True)
@@ -31,6 +30,10 @@ parser.add_argument('--random_factor', default='0.10', required=False)
 parser.add_argument('--mutation_rate', default='0.9', required=False)
 parser.add_argument('--mutations_weights', default='0.75/0.25/0.75/0.25/2.5/2.5/0', required=False, 
     help='7 \'/\' separated values for mutation weights, order is: add_node, delete_node, add_edge, delete_edge, node_params, edge_params, net_params')
+parser.add_argument('--edge_mutations', default='0.65/0.35', required=False,
+    help='2 \'/\' separated values for edge mutations eons param, order is: weight, delay')
+parser.add_argument('--inject', required=False,
+    help='Path to JSON file of network to inject into population')
 
 args = parser.parse_args()
 
@@ -61,12 +64,19 @@ MOA.seed(23456789, '')
 NUM_PROCESSES = int(args.num_processes)
 
 # Configure EONS
-# mut_weight_values = args.mutations_weights.split('/')
-# if len(mut_weight_values) != 7:
-#     print('Invalid input for mutations_weights (see default value in script, and check -h)')
-#     exit()
+mut_weight_values = args.mutations_weights.split('/')
+if len(mut_weight_values) != 7:
+    print('Invalid input for mutations_weights (see default value in script, and check -h)')
+    exit()
 
-# mut_weight_values = [float(w) for w in mut_weight_values]
+mut_weight_values = [float(w) for w in mut_weight_values]
+
+edge_mutations_values = args.edge_mutations.split('/')
+if len(edge_mutations_values) != 2:
+    print('Invalid input for edge_mutations (see default value in script, and check -h)')
+    exit()
+
+edge_mutations_values = [float(v) for v in edge_mutations_values]
 
 eons_param = {
     "starting_nodes": NUM_HIDDEN_NEURONS,
@@ -83,16 +93,17 @@ eons_param = {
     "num_mutations": float(args.num_mutations),
     "node_mutations": { "Threshold": 1.0 },
     "net_mutations": { },
-    "edge_mutations": { "Weight": 0.65 , "Delay": 0.35,  },
+    "edge_mutations": { "Weight": edge_mutations_values[0], "Delay": edge_mutations_values[1],  },
     "num_best" : 2,
-    "add_node_rate": 0.75,
-    "delete_node_rate": 0.25,
-    "add_edge_rate": 0.75,
-    "delete_edge_rate": 0.25,
-    "node_params_rate": 2.5,
-    "edge_params_rate": 2.5,
-    "net_params_rate" : 0
+    "add_node_rate": mut_weight_values[0],
+    "delete_node_rate": mut_weight_values[1],
+    "add_edge_rate": mut_weight_values[2],
+    "delete_edge_rate": mut_weight_values[3],
+    "node_params_rate": mut_weight_values[4],
+    "edge_params_rate": mut_weight_values[5],
+    "net_params_rate" : mut_weight_values[6]
 }
+print(eons_param)
 
 proc = risp.Processor(risp_config)
 eons_inst = eons.EONS(eons_param)
@@ -164,6 +175,14 @@ def compute_fitness(net, spikes, labels, display_per_class=False, reconstruct_sp
 
     return correct
 
+def load_network(path):
+    loaded_net = neuro.Network()
+    with open(path, 'r') as f:
+        network_json = json.load(f)
+        loaded_net.from_json(network_json)
+
+    return loaded_net
+
 
 EPOCH_COUNT = int(args.epoch_count)
 eons_inst.set_template_network(template_net)
@@ -175,6 +194,10 @@ pop_fit_log = [] # mean
 TRAINING_SET_SIZE = training_labels.shape[0]
 VALIDATION_SET_SIZE = validation_labels.shape[0]
 t0, t1 = 0, 0
+
+# inject into pop
+if args.inject is not None:
+    pop.replace_network(1, load_network(args.inject))
 
 # training loop
 for i in range(EPOCH_COUNT):
