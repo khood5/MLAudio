@@ -29,14 +29,16 @@ loss_func = nn.CrossEntropyLoss()
 #optimizer = SGD(model.parameters(), lr=0.1)
 optimizer = AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
 
+print(f'Training with {len(training_set)} training samples')
+val_acc_log = []
 for epoch in range(30):
-    print(f'Training with {len(training_set)} training samples')
     print(f'Currently on epoch {epoch}')
 
     # run accuracy on validation
     # TODO: breakdown by class accuracy
     total, correct = 0, 0
     correct_with_gunshot = 0
+    loss_sum = 0
     with torch.no_grad():
         for data in validation_loader:
             mosaics, labels = data
@@ -48,17 +50,32 @@ for epoch in range(30):
             outputs = model(mosaics)
             v, ind = torch.max(outputs, 1)
 
+            # record validation loss to csv
+            loss_sum += loss_func(outputs, labels).item()
+
             # check what we got correct, then use logical_and to get the ones that are correct and of class 1 
             correct_with_gunshot += torch.sum(torch.logical_and(ind == labels, labels))
 
             correct += torch.sum(ind == labels).item()
             total += BATCH_SIZE
 
+    # record validation loss to csv
+    val_loss = loss_sum / len(validation_loader)
+    print(f'Current validation set loss: {val_loss}')
+    with open('./models/resnet152val.txt', 'a') as f:
+        f.write(f'{epoch},{val_loss}\n')
+
 
     print(f'Total is {total} and correct is {correct}')
     print(f'correct in class 1 (with gunshot) {correct_with_gunshot}')
     print(f'correct in class 0 (NO gunshot) {correct-correct_with_gunshot}')
-    print(f'Accuracy is {correct / total}')
+    print(f'Validation accuracy is {correct / total}')
+    val_acc_log.append(correct/total)
+
+    # save best model
+    if len(val_acc_log) == 1 or val_acc_log[-1] > max(val_acc_log[:-1]):
+        print('New best model, writing to disk...')
+        torch.save(model.state_dict(), './models/resnet152_model')
 
     # compute and update gradients
     count = 0
@@ -84,6 +101,4 @@ for epoch in range(30):
             with open('./models/resnet152.txt', 'a') as f:
                 f.write(f'{epoch},{running_loss}\n')
 
-            print(f"Running loss: {running_loss}")
-
-torch.save(model.state_dict(), './models/resnet152_model')
+            print(f"Running training loss: {running_loss}")
