@@ -10,6 +10,7 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 import multiprocessing
+from multiprocessing import shared_memory
 import time
 import functools
 import json
@@ -132,22 +133,29 @@ for output_id in template_net.as_json()['Outputs']:
 
 # TRAINING -------------------------------------------------------------------------------------------
 
-def compute_fitness(net, spikes, labels, display_per_class=False, reconstruct_spikes=False):
+def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_shape, display_per_class=False, reconstruct_spikes=False):
+    # get shared memory values
+    shm_spikes = shared_memory.SharedMemory(name=spikes_shm_name)
+    shared_spikes_arr = np.ndarray(shape=spikes_shm_shape, dtype=spikes_shm_dtype, buffer=shm_spikes.buf)
+
     # Explained in SPECIAL NOTE below, rebuild Spike instances to feed into processor
     if reconstruct_spikes:
         rec_spikes = []
 
-        for i in range(len(spikes)):
+        for i in range(shared_spikes_arr.shape[0]): # sample
             rec_spikes.append([])
             
-            for j in range(len(spikes[i])):
+            for j in range(shared_spikes_arr.shape[1]): # channel
                 rec_spikes[i].append([])
                 
-                for spk in spikes[i][j]:
-                    if spk[2] == 1:
-                        rec_spikes[i][j].append(neuro.Spike(spk[0], spk[1], spk[2]))
+                for k in range(shared_spikes_arr.shape[2]): # timestep
+                    if shared_spikes_arr[i][j][k][2] == 1: # value component
+                        rec_spikes[i][j].append(neuro.Spike(
+                            shared_spikes_arr[i][j][k][0], shared_spikes_arr[i][j][k][1], shared_spikes_arr[i][j][k][2]))
 
         spikes = rec_spikes
+
+    shm_spikes.close()
     
     proc.load_network(net)
 
@@ -199,12 +207,40 @@ t0, t1 = 0, 0
 if args.inject is not None:
     pop.replace_network(1, load_network(args.inject))
 
+# create shared memory - TODO: make this good
+# train set shared memory
+training_spikes_arr = np.array(training_spikes)
+train_spikes_shape = training_spikes_arr.shape
+train_spikes_dtype = training_spikes_arr.dtype
+train_shm_size = train_spikes_dtype.itemsize * np.prod(train_spikes_shape)
+
+shm = shared_memory.SharedMemory(create=True, size=train_shm_size)
+shm_name = shm.name
+
+shared_arr = np.ndarray(dtype=train_spikes_dtype, shape=train_spikes_shape, buffer=shm.buf)
+shared_arr[:] = training_spikes_arr[:]
+
+# validation set shared memory
+validation_spikes_arr = np.array(validation_spikes)
+validation_spikes_shape = validation_spikes_arr.shape
+validation_spikes_dtype = validation_spikes_arr.dtype
+validation_shm_size = validation_spikes_dtype.itemsize * np.prod(validation_spikes_shape)
+
+validation_shm = shared_memory.SharedMemory(create=True, size=validation_shm_size)
+validation_shm_name = validation_shm.name
+
+shared_val_arr = np.ndarray(dtype=validation_spikes_dtype, shape=validation_spikes_shape, buffer=validation_shm.buf)
+shared_val_arr[:] = validation_spikes_arr[:]
+
 # training loop
 for i in range(EPOCH_COUNT):
     print(f'Starting epoch {i}...')
     t0 = time.time()
 
-    compute_fitness_partial = functools.partial(compute_fitness, spikes=training_spikes, labels=training_labels, reconstruct_spikes=True)
+    compute_fitness_partial = functools.partial(compute_fitness, spikes_shm_name=shm_name, labels=training_labels,
+                                                spikes_shm_shape=train_spikes_shape,
+                                                spikes_shm_dtype=train_spikes_dtype,
+                                                reconstruct_spikes=True)
     with multiprocessing.Pool(processes=NUM_PROCESSES) as p:
         fits = p.map(compute_fitness_partial, 
                     [n.network for n in pop.networks])
@@ -218,7 +254,10 @@ for i in range(EPOCH_COUNT):
     network_details(best_net)
 
     # try it on validation set samples
-    validation_fit = compute_fitness(best_net, validation_spikes, validation_labels, display_per_class=True, reconstruct_spikes=True)
+    validation_fit = compute_fitness(best_net, validation_shm_name, validation_labels,
+                                     validation_spikes_dtype,
+                                     validation_spikes_shape,
+                                     display_per_class=True, reconstruct_spikes=True)    
     best_fit_validation_log.append(validation_fit/(VALIDATION_SET_SIZE))
     print(f'Validation set accuracy for best network: {validation_fit/(VALIDATION_SET_SIZE):.2f}')
 

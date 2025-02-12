@@ -22,7 +22,7 @@ s2s._default_spec_kwargs = {
     "n_fft": 512,
     "f_min": 20,
     "f_max": 4000,
-    "hop_length": 80,
+    "hop_length": 10,
 }
 s2s.transform = torchaudio.transforms.MelSpectrogram(**s2s._default_spec_kwargs)
 
