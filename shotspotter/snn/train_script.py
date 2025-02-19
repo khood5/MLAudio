@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import multiprocessing
 from multiprocessing import shared_memory
+import signal
 import time
 import functools
 import json
@@ -35,6 +36,8 @@ parser.add_argument('--edge_mutations', default='0.65/0.35', required=False,
     help='2 \'/\' separated values for edge mutations eons param, order is: weight, delay')
 parser.add_argument('--inject', required=False,
     help='Path to JSON file of network to inject into population')
+parser.add_argument('--mode', default='s2s', choices=['s2s', 'samples'], required=False)
+parser.add_argument('--proc_timesteps', default='1000', required=False)
 
 args = parser.parse_args()
 
@@ -53,7 +56,13 @@ s2s._default_spec_kwargs = {
 }
 s2s.transform = torchaudio.transforms.MelSpectrogram(**s2s._default_spec_kwargs)
 
-NUM_INPUT_NEURONS = 80 # see paper
+MODE = args.mode
+
+if MODE == 's2s':
+    NUM_INPUT_NEURONS = 80
+elif MODE == 'samples':
+    NUM_INPUT_NEURONS = 1
+
 NUM_OUTPUT_NEURONS = 2
 NUM_SYNAPSES = int(args.synapse_count)
 NUM_HIDDEN_NEURONS = int(args.hidden_count)
@@ -63,6 +72,7 @@ MOA = neuro.MOA()
 MOA.seed(23456789, '')
 
 NUM_PROCESSES = int(args.num_processes)
+PROC_RUN_TIMESTEPS = int(args.proc_timesteps)
 
 # Configure EONS
 mut_weight_values = args.mutations_weights.split('/')
@@ -138,20 +148,31 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
     shm_spikes = shared_memory.SharedMemory(name=spikes_shm_name)
     shared_spikes_arr = np.ndarray(shape=spikes_shm_shape, dtype=spikes_shm_dtype, buffer=shm_spikes.buf)
 
-    # Explained in SPECIAL NOTE below, rebuild Spike instances to feed into processor
     if reconstruct_spikes:
         rec_spikes = []
 
-        for i in range(shared_spikes_arr.shape[0]): # sample
-            rec_spikes.append([])
-            
-            for j in range(shared_spikes_arr.shape[1]): # channel
-                rec_spikes[i].append([])
+        if MODE == 's2s':
+            for i in range(shared_spikes_arr.shape[0]): # sample
+                rec_spikes.append([])
                 
-                for k in range(shared_spikes_arr.shape[2]): # timestep
-                    if shared_spikes_arr[i][j][k][2] == 1: # value component
-                        rec_spikes[i][j].append(neuro.Spike(
-                            shared_spikes_arr[i][j][k][0], shared_spikes_arr[i][j][k][1], shared_spikes_arr[i][j][k][2]))
+                for j in range(shared_spikes_arr.shape[1]): # channel
+                    rec_spikes[i].append([])
+                    
+                    for k in range(shared_spikes_arr.shape[2]): # timestep
+                        if shared_spikes_arr[i][j][k][2] == 1: # value component
+                            rec_spikes[i][j].append(neuro.Spike(
+                                shared_spikes_arr[i][j][k][0], shared_spikes_arr[i][j][k][1], shared_spikes_arr[i][j][k][2]))
+
+        elif MODE == 'samples':
+            # for this one our dimensions are: (data sample #, 24k audio samples)
+            for i in range(shared_spikes_arr.shape[0]): 
+                rec_spikes.append([])
+                
+                for j in range(shared_spikes_arr.shape[1]):
+                    # id, time, value
+                    rec_spikes[i].append(neuro.Spike(0, j, shared_spikes_arr[i][j]))
+
+
 
         spikes = rec_spikes
 
@@ -164,10 +185,13 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
     for i in range(len(spikes)):
         proc.clear_activity()
 
-        for c in spikes[i]: # spikes[i] is a single training sample
-            proc.apply_spikes(c)
+        if MODE == 's2s':
+            for c in spikes[i]: # spikes[i] is a single training sample
+                proc.apply_spikes(c)
+        elif MODE == 'samples':
+            proc.apply_spikes(spikes[i])
 
-        proc.run(1000)
+        proc.run(PROC_RUN_TIMESTEPS)
 
         out_counts = proc.output_counts()
 
@@ -232,6 +256,20 @@ validation_shm_name = validation_shm.name
 shared_val_arr = np.ndarray(dtype=validation_spikes_dtype, shape=validation_spikes_shape, buffer=validation_shm.buf)
 shared_val_arr[:] = validation_spikes_arr[:]
 
+# Cleanup shared memory on ctrl c
+def cleanup_handler(s, f):
+    try:
+        shm.close()
+        shm.unlink()
+        validation_shm.close()
+        validation_shm.unlink()
+    except FileNotFoundError:
+        pass
+    exit()
+    
+signal.signal(signal.SIGINT, cleanup_handler)
+signal.signal(signal.SIGTERM, cleanup_handler)
+
 # training loop
 for i in range(EPOCH_COUNT):
     print(f'Starting epoch {i}...')
@@ -274,3 +312,8 @@ for i in range(EPOCH_COUNT):
     print(f'This epoch took {time.time()-t0:.2f} to run')
     print('----------')
     pop = eons_inst.do_epoch(pop, fits, eons_param)
+
+shm.close()
+shm.unlink()
+validation_shm.close()
+validation_shm.unlink()
