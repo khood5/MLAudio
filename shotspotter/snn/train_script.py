@@ -256,20 +256,6 @@ validation_shm_name = validation_shm.name
 shared_val_arr = np.ndarray(dtype=validation_spikes_dtype, shape=validation_spikes_shape, buffer=validation_shm.buf)
 shared_val_arr[:] = validation_spikes_arr[:]
 
-# Cleanup shared memory on ctrl c
-def cleanup_handler(s, f):
-    try:
-        shm.close()
-        shm.unlink()
-        validation_shm.close()
-        validation_shm.unlink()
-    except FileNotFoundError:
-        pass
-    exit()
-    
-signal.signal(signal.SIGINT, cleanup_handler)
-signal.signal(signal.SIGTERM, cleanup_handler)
-
 # training loop
 for i in range(EPOCH_COUNT):
     print(f'Starting epoch {i}...')
