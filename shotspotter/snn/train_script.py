@@ -36,7 +36,7 @@ parser.add_argument('--edge_mutations', default='0.65/0.35', required=False,
     help='2 \'/\' separated values for edge mutations eons param, order is: weight, delay')
 parser.add_argument('--inject', required=False,
     help='Path to JSON file of network to inject into population')
-parser.add_argument('--mode', default='s2s', choices=['s2s', 'samples'], required=False)
+parser.add_argument('--mode', default='s2s', choices=['s2s', 'samples', 'dwt'], required=False)
 parser.add_argument('--proc_timesteps', default='1000', required=False)
 
 args = parser.parse_args()
@@ -62,6 +62,8 @@ if MODE == 's2s':
     NUM_INPUT_NEURONS = 80
 elif MODE == 'samples':
     NUM_INPUT_NEURONS = 1
+elif MODE == 'dwt':
+    NUM_INPUT_NEURONS = 7
 
 NUM_OUTPUT_NEURONS = 2
 NUM_SYNAPSES = int(args.synapse_count)
@@ -172,7 +174,17 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
                     # id, time, value
                     rec_spikes[i].append(neuro.Spike(0, j, shared_spikes_arr[i][j]))
 
+        elif MODE == 'dwt':
+            # here dimensions will be (7, timesteps) per sample
+            for i in range(shared_spikes_arr.shape[0]):
+                rec_spikes.append([])
 
+                for j in range(shared_spikes_arr.shape[1]):
+                    rec_spikes[i].append([])
+
+                    for k in range(shared_spikes_arr.shape[2]):
+                        #print(f'Creating Spike({j}, {k}, {shared_spikes_arr[i][j][k]})')
+                        rec_spikes[i][j].append(neuro.Spike(j, k, shared_spikes_arr[i][j][k]))
 
         spikes = rec_spikes
 
@@ -185,7 +197,7 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
     for i in range(len(spikes)):
         proc.clear_activity()
 
-        if MODE == 's2s':
+        if MODE == 's2s' or MODE == 'dwt':
             for c in spikes[i]: # spikes[i] is a single training sample
                 proc.apply_spikes(c)
         elif MODE == 'samples':
