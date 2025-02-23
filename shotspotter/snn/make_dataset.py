@@ -5,11 +5,12 @@ import torch
 import random
 import numpy as np
 import os
+import pywt
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--dataset_cap', required=True)
 parser.add_argument('-p', '--save_path', required=True)
-parser.add_argument('-m', '--mode', choices=['s2s', 'samples'], required=True)
+parser.add_argument('-m', '--mode', choices=['s2s', 'samples', 'dwt'], required=True)
 
 args = parser.parse_args()
 
@@ -28,6 +29,8 @@ s2s._default_spec_kwargs = {
 s2s.transform = torchaudio.transforms.MelSpectrogram(**s2s._default_spec_kwargs)
 
 DATASET_CAP = int(args.dataset_cap)
+DWT_LEVELS = 7
+DWT_TIMESTEPS = 450
 
 gunshot_file_paths = [PATH_GUNSHOT_SOUNDS+'/'+fn for fn in os.listdir(PATH_GUNSHOT_SOUNDS)][:DATASET_CAP//2]
 print(f'We have {len(gunshot_file_paths)} gunshot audio files')
@@ -101,6 +104,53 @@ def to_spikes(paths_list, labels, mode='s2s'):
         # Just to match what I had before, put this in all_spikes list of arrays
         all_spikes = norm_data.tolist()
         targets = np.array(labels)
+
+    elif mode == 'dwt':
+        all_spikes = []
+        targets = np.array(labels)
+        for p in paths_list:
+            samples, rate = torchaudio.load(p, normalize=False)
+
+            # same procedure as 'samples' mode
+            if samples.shape[0] == 2: samples = samples[0, :]
+            else: samples = samples[0]
+            if(len(samples) < 24000):
+                samples = torch.cat((samples, torch.tensor([0])))
+
+            coeffs = pywt.wavedec(samples, 'db1', level=DWT_LEVELS)
+
+            # NOTE 1: that this will leave out the approximation coefficient, it carries information about the lowest
+            # frequency band. I did it the same way for the mosaic CNN version, so maybe we just don't need it
+            # NOTE 2: we are only taking the magnitude (hence np.abs) of the coefficients, same as for the mosaic CNN
+            # NOTE 3: for my future reference, the code below just repeats the coefficient values at level X so that they all
+            # align and match the D1 coeffs' size and timestep  
+            accum = np.abs(np.array([coeffs[-1]]))
+            for i in range(DWT_LEVELS - 1):
+                current_coef = coeffs[DWT_LEVELS - 1 - i]
+                r = np.abs(np.array([np.repeat(current_coef, pow(2, i + 1))]))
+                r = r[:, 0:rate]
+                accum = np.concatenate([accum, r])
+            
+            # min max normalize
+            global_min = accum.min() 
+            global_max = accum.max() 
+
+            accum = (accum-global_min) / (global_max - global_min)
+
+            timestep_skip = rate//DWT_TIMESTEPS
+
+            # note that the timestep count will not be exact, timestep skip just approximates to the closest we can get 
+            # without missing information at the end
+            channels = [[] for i in range(DWT_LEVELS)]
+            for i in range(rate//timestep_skip + 1):
+                for j in range(DWT_LEVELS):
+                    channels[j].append(accum[j][i*timestep_skip])
+
+            channels = np.array(channels)
+            all_spikes.append(channels)
+
+            #np.savez('./test450timesteps.npz', channels=channels)
+
 
     return all_spikes, targets
 
