@@ -216,3 +216,6 @@ shotspotter/snn/.idea
 shotspotter/snn/best_network.json
 shotspotter/snn/best_net.json
 shotspotter/snn/best_net.json:Zone.Identifier
+shotspotter/snn/test450timesteps.npz
+shotspotter/snn/temp.npz
+shotspotter/snn/models
