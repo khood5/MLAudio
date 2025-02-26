@@ -10,7 +10,7 @@ import pywt
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--dataset_cap', required=True)
 parser.add_argument('-p', '--save_path', required=True)
-parser.add_argument('-m', '--mode', choices=['s2s', 'samples', 'dwt'], required=True)
+parser.add_argument('-m', '--mode', choices=['s2s', 'samples', 'dwt', 'spec'], required=True)
 
 args = parser.parse_args()
 
@@ -30,7 +30,9 @@ s2s.transform = torchaudio.transforms.MelSpectrogram(**s2s._default_spec_kwargs)
 
 DATASET_CAP = int(args.dataset_cap)
 DWT_LEVELS = 7
-DWT_TIMESTEPS = 450
+DWT_TIMESTEPS = 900
+
+SPEC_FREQ_BIN_COUNT = 25
 
 gunshot_file_paths = [PATH_GUNSHOT_SOUNDS+'/'+fn for fn in os.listdir(PATH_GUNSHOT_SOUNDS)][:DATASET_CAP//2]
 print(f'We have {len(gunshot_file_paths)} gunshot audio files')
@@ -150,7 +152,33 @@ def to_spikes(paths_list, labels, mode='s2s'):
             all_spikes.append(channels)
 
             #np.savez('./test450timesteps.npz', channels=channels)
+    
+    elif mode == 'spec':
+        all_spikes = []
+        targets = np.array(labels)
 
+        for p in paths_list:
+            samples, rate = torchaudio.load(p, normalize=False)
+
+            # same procedure as 'samples' mode
+            if samples.shape[0] == 2: samples = samples[0, :]
+            else: samples = samples[0]
+            if(len(samples) < 24000):
+                samples = torch.cat((samples, torch.tensor([0])))
+
+            # freq bin count is nfft//2 + 1
+            spec_transform = torchaudio.transforms.Spectrogram(n_fft=(2*SPEC_FREQ_BIN_COUNT-2))
+
+            samples = samples.to(torch.float64)
+            spec = spec_transform(samples)
+
+            # min max normalize
+            global_min = spec.min() 
+            global_max = spec.max() 
+
+            spec = (spec-global_min) / (global_max - global_min)
+
+            all_spikes.append(spec)
 
     return all_spikes, targets
 
