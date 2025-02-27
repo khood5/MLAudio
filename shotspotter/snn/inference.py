@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-p', '--dataset', required=True)
 parser.add_argument('-n', '--network', required=True)
 parser.add_argument('-m', '--mode', required=True, choices=['s2s', 'samples', 'dwt'])
+parser.add_argument('--out_path', required=True)
 args = parser.parse_args()
 
 MODE = args.mode
@@ -33,13 +34,13 @@ _, _, _, _, test_spikes, test_labels = read_spikes_from_disk(args.dataset)
 stop = threading.Event()
 def record_consumption():
     while not stop.is_set():
-        with open(args.out_path, 'a') as f:
-            f.write(f'{watt_now()}\n')
+        #with open(args.out_path, 'a') as f:
+            #f.write(f'{watt_now()}\n')
 
         time.sleep(0.005)
 
 thr = threading.Thread(target=record_consumption)
-thr.start()
+#thr.start()
 
 def compute_fitness(spikes, labels, display_per_class=False, reconstruct_spikes=False):
     # See train_script

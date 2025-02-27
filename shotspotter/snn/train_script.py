@@ -36,7 +36,7 @@ parser.add_argument('--edge_mutations', default='0.65/0.35', required=False,
     help='2 \'/\' separated values for edge mutations eons param, order is: weight, delay')
 parser.add_argument('--inject', required=False,
     help='Path to JSON file of network to inject into population')
-parser.add_argument('--mode', default='s2s', choices=['s2s', 'samples', 'dwt'], required=False)
+parser.add_argument('--mode', default='s2s', choices=['s2s', 'samples', 'dwt', 'spec'], required=False)
 parser.add_argument('--proc_timesteps', default='1000', required=False)
 
 args = parser.parse_args()
@@ -56,6 +56,8 @@ s2s._default_spec_kwargs = {
 }
 s2s.transform = torchaudio.transforms.MelSpectrogram(**s2s._default_spec_kwargs)
 
+SPEC_FREQ_BIN_COUNT = 25
+
 MODE = args.mode
 
 if MODE == 's2s':
@@ -64,6 +66,8 @@ elif MODE == 'samples':
     NUM_INPUT_NEURONS = 1
 elif MODE == 'dwt':
     NUM_INPUT_NEURONS = 7
+elif MODE == 'spec':
+    NUM_INPUT_NEURONS = SPEC_FREQ_BIN_COUNT
 
 NUM_OUTPUT_NEURONS = 2
 NUM_SYNAPSES = int(args.synapse_count)
@@ -186,6 +190,18 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
                         #print(f'Creating Spike({j}, {k}, {shared_spikes_arr[i][j][k]})')
                         rec_spikes[i][j].append(neuro.Spike(j, k, shared_spikes_arr[i][j][k]))
 
+        elif MODE == 'spec':
+            # shape is (sample_#, channel, timestep)
+            for i in range(shared_spikes_arr.shape[0]):
+                rec_spikes.append([])
+
+                for j in range(shared_spikes_arr.shape[1]):
+                    rec_spikes[i].append([])
+
+                    for k in range(shared_spikes_arr.shape[2]):
+                        rec_spikes[i][j].append(neuro.Spike(j, k, shared_spikes_arr[i][j][k]))
+
+
         spikes = rec_spikes
 
     shm_spikes.close()
@@ -197,7 +213,7 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
     for i in range(len(spikes)):
         proc.clear_activity()
 
-        if MODE == 's2s' or MODE == 'dwt':
+        if MODE == 's2s' or MODE == 'dwt' or MODE == 'spec':
             for c in spikes[i]: # spikes[i] is a single training sample
                 proc.apply_spikes(c)
         elif MODE == 'samples':
