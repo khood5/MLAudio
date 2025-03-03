@@ -43,27 +43,33 @@ nogunshot_file_paths = [PATH_NOGUNSHOT_SOUNDS+'/'+fn for fn in os.listdir(PATH_N
 print(f'We have {len(nogunshot_file_paths)} background only audio files')
 
 # get gunshot injection time data 
+raw_time_data = {} # we'll have key=filename, value=(injection_time, duration_time)
 with open(PATH_GUNSHOT_INDEX, 'r') as f:
-    lines = [i.replace('\n', '')for i in f.readlines()]
-    print(lines[:10])
+    lines = [i.replace('\n', '') for i in f.readlines()]
+    lines = [i.split(',') for i in lines]
+    raw_time_data = {l[0].split('/')[-1]:(float(l[1]), float(l[2])) for l in lines[1:]}
 
-exit()
+# will return (-1, -1) for background files (they have no gunshot injection data)
+def get_time_data(filename):
+    if filename.lower().find('background') != -1:
+        return (-1, -1)
+    return raw_time_data[filename.split('/')[-1]]
 
 def to_spikes(paths_list, labels, mode='s2s'):
     print("Reading audio files...")
     data = []
 
     print(f"Running '{mode}' encoding...")
+    gunshot_time_data = []
     if mode == 's2s':
         for p in paths_list:
+            gunshot_time_data.append(get_time_data(p))
+
             samples, rate = torchaudio.load(p)
             data.append(samples)
 
         # Note: looks like it works when audio is both single and dual channel regardless.
-        # Also, why is some of the audio dual channel whereas some is single channel - investigate
         trains, targets = s2s([(data[i], torch.tensor(labels[i])) for i in range(len(paths_list))])
-
-        print(trains.shape)
 
         all_spikes = []
 
@@ -94,6 +100,8 @@ def to_spikes(paths_list, labels, mode='s2s'):
 
     elif mode == 'samples':
         for p in paths_list:
+            gunshot_time_data.append(get_time_data(p))
+
             samples, rate = torchaudio.load(p, normalize=False)
 
             if samples.shape[0] == 2: # if dual channel, only take left
@@ -121,6 +129,8 @@ def to_spikes(paths_list, labels, mode='s2s'):
         all_spikes = []
         targets = np.array(labels)
         for p in paths_list:
+            gunshot_time_data.append(get_time_data(p))
+
             samples, rate = torchaudio.load(p, normalize=False)
 
             # same procedure as 'samples' mode
@@ -161,13 +171,13 @@ def to_spikes(paths_list, labels, mode='s2s'):
             channels = np.array(channels)
             all_spikes.append(channels)
 
-            #np.savez('./test450timesteps.npz', channels=channels)
-    
     elif mode == 'spec':
         all_spikes = []
         targets = np.array(labels)
 
         for p in paths_list:
+            gunshot_time_data.append(get_time_data(p))
+
             samples, rate = torchaudio.load(p, normalize=False)
 
             # same procedure as 'samples' mode
@@ -190,12 +200,13 @@ def to_spikes(paths_list, labels, mode='s2s'):
 
             all_spikes.append(spec)
 
-    return all_spikes, targets
+    return all_spikes, targets, gunshot_time_data
 
 # make sure path is .npz for consistency
-def write_spikes_to_disk(path, train, train_labels, val, val_labels, test, test_labels):
+def write_spikes_to_disk(path, train, train_labels, train_gunshot_data, val, val_labels, val_gunshot_data, test, test_labels):
     np.savez(path, train_set=train, validation_set=val, test_set=test, train_labels=train_labels,
-            validation_labels=val_labels, test_labels=test_labels)
+            validation_labels=val_labels, test_labels=test_labels, train_gunshot_data=train_gunshot_data,
+            validation_gunshot_data=val_gunshot_data)
 
 # generate spikes
 p1 = [(i, 1) for i in gunshot_file_paths]
@@ -204,19 +215,22 @@ p2 = [(i, 0) for i in nogunshot_file_paths]
 pairs = p1+p2 # path to sound - label tuples
 random.shuffle(pairs)
 
-spikes, labels = to_spikes([i[0] for i in pairs], [i[1] for i in pairs], mode=args.mode)
+spikes, labels, gunshot_data = to_spikes([i[0] for i in pairs], [i[1] for i in pairs], mode=args.mode)
 
 # training/validation/test split
 train_cutoff_index = int(DATASET_CAP*0.8)
 test_val_cutoff_offset = int(DATASET_CAP*0.1)
 training_spikes = spikes[0:train_cutoff_index]
 training_labels = labels[0:train_cutoff_index]
+training_gunshot_data = gunshot_data[0:train_cutoff_index]
 
 validation_spikes = spikes[train_cutoff_index:train_cutoff_index+test_val_cutoff_offset]
 validation_labels = labels[train_cutoff_index:train_cutoff_index+test_val_cutoff_offset]
+validation_gunshot_data = gunshot_data[train_cutoff_index:train_cutoff_index+test_val_cutoff_offset]
 
 test_spikes = spikes[train_cutoff_index+test_val_cutoff_offset:]
 test_labels = labels[train_cutoff_index+test_val_cutoff_offset:]
 
 print("Writing to disk...")
-write_spikes_to_disk(args.save_path, training_spikes, training_labels, validation_spikes, validation_labels, test_spikes, test_labels)
+write_spikes_to_disk(args.save_path, training_spikes, training_labels, training_gunshot_data,
+ validation_spikes, validation_labels, validation_gunshot_data, test_spikes, test_labels)
