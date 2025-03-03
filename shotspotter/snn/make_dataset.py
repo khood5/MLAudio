@@ -14,7 +14,10 @@ parser.add_argument('-m', '--mode', choices=['s2s', 'samples', 'dwt', 'spec'], r
 
 args = parser.parse_args()
 
-PATH_GUNSHOT_SOUNDS = '/home/joao/dev/MLAudio/shotspotter/data/gunshots'
+PATH_GUNSHOT_SOUNDS = '/home/joao/dev/MLAudio/shotspotter/data/gunshotsNew'
+# we need this next one to get the timestamps for gunshot injection and duration
+# note that this is the file that is output from /data/makeGunshotAudio.py
+PATH_GUNSHOT_INDEX = '/home/joao/dev/MLAudio/shotspotter/data/gunshotsNewIndex.csv'
 PATH_NOGUNSHOT_SOUNDS = '/home/joao/dev/MLAudio/shotspotter/data/genBackgrounds'
 
 s2s = speech2spikes.S2S()
@@ -39,16 +42,23 @@ print(f'We have {len(gunshot_file_paths)} gunshot audio files')
 nogunshot_file_paths = [PATH_NOGUNSHOT_SOUNDS+'/'+fn for fn in os.listdir(PATH_NOGUNSHOT_SOUNDS)][:DATASET_CAP//2]
 print(f'We have {len(nogunshot_file_paths)} background only audio files')
 
+# get gunshot injection time data 
+with open(PATH_GUNSHOT_INDEX, 'r') as f:
+    lines = [i.replace('\n', '')for i in f.readlines()]
+    print(lines[:10])
+
+exit()
+
 def to_spikes(paths_list, labels, mode='s2s'):
     print("Reading audio files...")
     data = []
 
+    print(f"Running '{mode}' encoding...")
     if mode == 's2s':
         for p in paths_list:
             samples, rate = torchaudio.load(p)
             data.append(samples)
 
-        print("Running speech2spikes...")
         # Note: looks like it works when audio is both single and dual channel regardless.
         # Also, why is some of the audio dual channel whereas some is single channel - investigate
         trains, targets = s2s([(data[i], torch.tensor(labels[i])) for i in range(len(paths_list))])

@@ -30,7 +30,7 @@ def makeGunshotAudio(sampleGunshotAudio, backgroundAudio, outputPath, sharedRows
         print(f"An unexpected error occurred: {e}")
     GunshotAudio= GunshotAudio.set_frame_rate(sample_rate) # fix sample rate 
     GunshotAudio.export(outputPath, format="wav", codec="pcm_s32le").close()
-    sharedRows[index] = [str(outputPath), str(gunshotInjectionPoint), backgroundAudio[index], gunshotPath]
+    sharedRows[index] = [str(outputPath), str(gunshotInjectionPoint), str(gunshot.duration_seconds), backgroundAudio[index], gunshotPath]
 
 def main():
     # Add command-line arguments
@@ -94,7 +94,7 @@ def main():
     file = open('gunshotIndex.csv', 'w+', newline ='')
     with file:    
         write = csv.writer(file)
-        write.writerow(["File", "Gunshot Timestamp", "background source file", "gunshot source file"]) # header
+        write.writerow(["File", "Gunshot Timestamp", "Gunshot Duration", "background source file", "gunshot source file"]) # header
         write.writerows([i for i in gunshotWithBackgroundIndexRows]) 
 
 if __name__ == "__main__":
