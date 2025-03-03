@@ -38,6 +38,7 @@ parser.add_argument('--inject', required=False,
     help='Path to JSON file of network to inject into population')
 parser.add_argument('--mode', default='s2s', choices=['s2s', 'samples', 'dwt', 'spec'], required=False)
 parser.add_argument('--proc_timesteps', default='1000', required=False)
+parser.add_argument('--seed', required=False)
 
 args = parser.parse_args()
 
@@ -75,7 +76,10 @@ NUM_HIDDEN_NEURONS = int(args.hidden_count)
 POP_SIZE = 70
 
 MOA = neuro.MOA()
-MOA.seed(23456789, '')
+if args.seed is None:
+    MOA.seed(random.randint(0,10000000), '')
+else:
+    MOA.seed(int(args.seed), '')
 
 NUM_PROCESSES = int(args.num_processes)
 PROC_RUN_TIMESTEPS = int(args.proc_timesteps)

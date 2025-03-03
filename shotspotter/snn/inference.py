@@ -40,7 +40,7 @@ def record_consumption():
         time.sleep(0.005)
 
 thr = threading.Thread(target=record_consumption)
-#thr.start()
+thr.start()
 
 def compute_fitness(spikes, labels, display_per_class=False, reconstruct_spikes=False):
     # See train_script
@@ -91,9 +91,12 @@ def compute_fitness(spikes, labels, display_per_class=False, reconstruct_spikes=
         for c in spikes[i]: # spikes[i] is a single training sample
             proc.apply_spikes(c)
 
-        proc.run(20)
+        proc.run(5)
 
         out_counts = proc.output_counts()
+        print(proc.output_vectors())
+        #print(proc.neuron_vectors())
+        print("-----------")
 
         prediction = 0 if out_counts[0] > out_counts[1] else 1
 
