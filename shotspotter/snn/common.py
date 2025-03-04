@@ -13,8 +13,7 @@ risp_config = {
 
 def read_spikes_from_disk(path):
     data = np.load(path)
-    return data['train_set'], data['train_labels'], data['validation_set'], data['validation_labels'], data['test_set'], data['test_labels']
-
+    return data['train_set'], data['train_labels'], data['train_gunshot_data'], data['validation_set'], data['validation_labels'], data['validation_gunshot_data'], data['test_set'], data['test_labels']
 
 def network_details(nw, log_json=False):
     net_json = nw.as_json()

@@ -221,3 +221,5 @@ shotspotter/snn/temp.npz
 shotspotter/snn/models
 shotspotter/snn/results
 shotspotter/temp
+shotspotter/snn/new-fit
+shotspotter/snn/new-fit-2

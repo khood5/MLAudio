@@ -28,7 +28,7 @@ for out_id in network.as_json()['Outputs']:
     proc.track_neuron_events(out_id)
 
 # load our spikes and labels
-_, _, _, _, test_spikes, test_labels = read_spikes_from_disk(args.dataset)
+_, _, _, _, _, _, test_spikes, test_labels = read_spikes_from_disk(args.dataset)
 
 # thread stuff
 stop = threading.Event()

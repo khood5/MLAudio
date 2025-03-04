@@ -33,7 +33,7 @@ s2s.transform = torchaudio.transforms.MelSpectrogram(**s2s._default_spec_kwargs)
 
 DATASET_CAP = int(args.dataset_cap)
 DWT_LEVELS = 7
-DWT_TIMESTEPS = 900
+DWT_TIMESTEPS = 450
 
 SPEC_FREQ_BIN_COUNT = 25
 

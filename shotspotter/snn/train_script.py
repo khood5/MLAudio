@@ -130,7 +130,7 @@ proc = risp.Processor(risp_config)
 eons_inst = eons.EONS(eons_param)
 
 # Read data
-training_spikes, training_labels, validation_spikes, validation_labels, test_spikes, test_labels = read_spikes_from_disk(args.dataset_path)
+training_spikes, training_labels, training_gunshot_data, validation_spikes, validation_labels, validation_gunshot_data, test_spikes, test_labels = read_spikes_from_disk(args.dataset_path)
 
 # set up template network  (inputs and outputs) for eons
 template_net = neuro.Network()
@@ -153,10 +153,12 @@ for output_id in template_net.as_json()['Outputs']:
 
 # TRAINING -------------------------------------------------------------------------------------------
 
-def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_shape, display_per_class=False, reconstruct_spikes=False):
+def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_shape, gunshot_data, train_mode=False, reconstruct_spikes=False):
     # get shared memory values
     shm_spikes = shared_memory.SharedMemory(name=spikes_shm_name)
     shared_spikes_arr = np.ndarray(shape=spikes_shm_shape, dtype=spikes_shm_dtype, buffer=shm_spikes.buf)
+
+    timesteps_from_data = shared_spikes_arr.shape[2] if MODE != 'samples' else 24000
 
     if reconstruct_spikes:
         rec_spikes = []
@@ -212,10 +214,14 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
     
     proc.load_network(net)
 
-    correct = 0
-    per_class = {0: 0, 1: 0}
+    differences = [] # track difference between gunshot and background neurons while gunshot is active
+    gunshot_spikes = [] # track how many times gunshot output neuron spiked on background only samples
     for i in range(len(spikes)):
         proc.clear_activity()
+
+        # apparently clear_activity resets this
+        proc.track_output_events(0)
+        proc.track_output_events(1)
 
         if MODE == 's2s' or MODE == 'dwt' or MODE == 'spec':
             for c in spikes[i]: # spikes[i] is a single training sample
@@ -223,21 +229,41 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
         elif MODE == 'samples':
             proc.apply_spikes(spikes[i])
 
+        # translation from time (0-2s) to timesteps
+        if labels[i] == 1:
+            secs_per_timestep = 2 / timesteps_from_data
+            active_between = gunshot_data[i] / secs_per_timestep # timesteps of input where gunshot audio is active
+
+            # I am pretty sure that all gunshots start at a point, then go until/beyond the end of 2s in every scenario
+            # due to how data is generated
+            active_between[1] = timesteps_from_data
+
+            active_between = active_between.astype(np.int64)
+        else:
+            active_between = [0, PROC_RUN_TIMESTEPS]
+
         proc.run(PROC_RUN_TIMESTEPS)
 
-        out_counts = proc.output_counts()
+        vec_0, vec_1 = proc.output_vectors()
 
-        prediction = 0 if out_counts[0] > out_counts[1] else 1
+        vec_0_count = 0
+        for s in vec_0:
+            if s >= active_between[0] and s <= active_between[1]:
+                vec_0_count += 1
 
-        if prediction == labels[i]:
-            correct += 1
-            per_class[prediction] += 1
+        vec_1_count = 0
+        for s in vec_1:
+            if s >= active_between[0] and s <= active_between[1]:
+                vec_1_count += 1
 
-    if display_per_class:
-        print(f'For class 0: {per_class[0]}/{(labels == 0).sum()}')
-        print(f'For class 1: {per_class[1]}/{(labels == 1).sum()}')
-
-    return correct
+        if labels[i] == 1:
+            differences.append(vec_1_count-vec_0_count)
+        else:
+            gunshot_spikes.append(len(vec_1))
+    
+    # idea here is that the first term pushes our networks towards those that can differentiate between gunshots and noise the most 
+    # while gunshot is happening, in combination with being able to not spike the gunshot neuron as much when only background sounds are happening
+    return (sum(differences)/len(differences)) - (sum(gunshot_spikes)/len(gunshot_spikes))
 
 def load_network(path):
     loaded_net = neuro.Network()
@@ -288,7 +314,7 @@ validation_shm_name = validation_shm.name
 shared_val_arr = np.ndarray(dtype=validation_spikes_dtype, shape=validation_spikes_shape, buffer=validation_shm.buf)
 shared_val_arr[:] = validation_spikes_arr[:]
 
-# training loop
+# training loop\
 for i in range(EPOCH_COUNT):
     print(f'Starting epoch {i}...')
     t0 = time.time()
@@ -296,15 +322,17 @@ for i in range(EPOCH_COUNT):
     compute_fitness_partial = functools.partial(compute_fitness, spikes_shm_name=shm_name, labels=training_labels,
                                                 spikes_shm_shape=train_spikes_shape,
                                                 spikes_shm_dtype=train_spikes_dtype,
+                                                gunshot_data=training_gunshot_data,
+                                                train_mode=True,
                                                 reconstruct_spikes=True)
     with multiprocessing.Pool(processes=NUM_PROCESSES) as p:
         fits = p.map(compute_fitness_partial, 
                     [n.network for n in pop.networks])
 
-    best_fit_log.append(max(fits)/TRAINING_SET_SIZE)
-    pop_fit_log.append((sum(fits)/len(fits))/TRAINING_SET_SIZE)
+    best_fit_log.append(max(fits))
+    pop_fit_log.append((sum(fits)/len(fits)))
 
-    print(f'Best training accuracy: {best_fit_log[-1]*100:.2f}')
+    print(f'Best training fit: {best_fit_log[-1]:.2f}')
 
     best_net = pop.networks[fits.index(max(fits))].network
     network_details(best_net)
@@ -313,9 +341,10 @@ for i in range(EPOCH_COUNT):
     validation_fit = compute_fitness(best_net, validation_shm_name, validation_labels,
                                      validation_spikes_dtype,
                                      validation_spikes_shape,
-                                     display_per_class=True, reconstruct_spikes=True)    
-    best_fit_validation_log.append(validation_fit/(VALIDATION_SET_SIZE))
-    print(f'Validation set accuracy for best network: {validation_fit/(VALIDATION_SET_SIZE):.2f}')
+                                     gunshot_data=validation_gunshot_data,
+                                     train_mode=False, reconstruct_spikes=True)    
+    best_fit_validation_log.append(validation_fit)
+    print(f'Validation set fitness for best network: {validation_fit:.2f}')
 
     # write best network on validation set to file
     if len(best_fit_validation_log) == 1 or best_fit_validation_log[-1] > max(best_fit_validation_log[:-1]):
