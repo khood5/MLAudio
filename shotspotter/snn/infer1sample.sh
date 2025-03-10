@@ -1,0 +1,1 @@
+python inference.py -p $2 -n ./tbest.json -m dwt --out_path /dev/null -t 340 -l $1

@@ -16,6 +16,7 @@ import time
 import functools
 import json
 from common import risp_config, read_spikes_from_disk, network_details
+import math
 
 # TODO: also, look into how we are reading filenames to ensure randomness
 
@@ -238,6 +239,8 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
             # due to how data is generated
             active_between[1] = timesteps_from_data
 
+            active_between[1] = PROC_RUN_TIMESTEPS # TEMPORARY TEST, just consider when gunshot start so we get more bouncing around
+
             active_between = active_between.astype(np.int64)
         else:
             active_between = [0, PROC_RUN_TIMESTEPS]
@@ -260,10 +263,15 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
             differences.append(vec_1_count-vec_0_count)
         else:
             gunshot_spikes.append(len(vec_1))
+
     
     # idea here is that the first term pushes our networks towards those that can differentiate between gunshots and noise the most 
     # while gunshot is happening, in combination with being able to not spike the gunshot neuron as much when only background sounds are happening
-    return (sum(differences)/len(differences)) - (sum(gunshot_spikes)/len(gunshot_spikes))
+    #print(correct/len(spikes))
+    dif = sum(differences)/len(differences)
+    gs = sum(gunshot_spikes)/len(gunshot_spikes)
+
+    return dif - (1/2)*gs
 
 def load_network(path):
     loaded_net = neuro.Network()
@@ -329,6 +337,8 @@ for i in range(EPOCH_COUNT):
         fits = p.map(compute_fitness_partial, 
                     [n.network for n in pop.networks])
 
+    print(fits)
+
     best_fit_log.append(max(fits))
     pop_fit_log.append((sum(fits)/len(fits)))
 
@@ -348,9 +358,15 @@ for i in range(EPOCH_COUNT):
 
     # write best network on validation set to file
     if len(best_fit_validation_log) == 1 or best_fit_validation_log[-1] > max(best_fit_validation_log[:-1]):
-        print(f'Writing best network to {args.best_net_path}')
+        print(f'Writing best validation set network to {args.best_net_path}')
         with open(args.best_net_path, 'w') as f:
             json.dump(best_net.as_json(), f)
+    
+    # also, let's write best network from train set to file
+    # FINISH THIS
+    # print(f'Writing best validation set network to {args.best_net_path}')
+    # with open(args.best_net_path, 'w') as f:
+    #     json.dump(best_net.as_json(), f)
 
     # let's also save our fitness logs
     with open(args.log_path, 'a') as f:
