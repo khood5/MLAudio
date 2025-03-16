@@ -16,10 +16,12 @@ parser.add_argument('-m', '--mode', required=True, choices=['s2s', 'samples', 'd
 parser.add_argument('--out_path', required=True)
 parser.add_argument('-l', '--label', required=False, help='label for single sample, required if -p/--dataset is a single sample')
 parser.add_argument('-t', '--threshold', required=True, help='threshold value to identify gunshot positive samples, should have been computed using validation set.')
+parser.add_argument('-s', '--timesteps', required=True)
 args = parser.parse_args()
 
 MODE = args.mode
-THRESHOLD = args.threshold
+THRESHOLD = int(args.threshold)
+PROC_TIMESTEPS = int(args.timesteps)
 
 proc = risp.Processor(risp_config)
 
@@ -109,7 +111,7 @@ def compute_fitness(spikes, labels, reconstruct_spikes=False):
         elif MODE == 'samples':
             proc.apply_spikes(spikes[i])
 
-        proc.run(2000)
+        proc.run(PROC_TIMESTEPS)
         gunshot_spikes.append((int(labels[i]), proc.output_counts()[1]))
 
     return np.array(gunshot_spikes)
@@ -124,7 +126,6 @@ thr.join()
 correct = 0
 fn, fp = 0, 0
 total = len(test_fit)
-THRESHOLD = 1750
 
 for i in range(total):
     if test_fit[i][0] == 1 and test_fit[i][1] > THRESHOLD:
@@ -137,6 +138,8 @@ for i in range(total):
         fp += 1
 
 print(f'Test set (size={total}) results\n')
+print(f'Inference took {time.time()-t0:.2f} seconds')
+
 
 print(f'{correct/total:.3f} accuracy {correct} out of {total}')
 print(f'False positive count: {fp}')

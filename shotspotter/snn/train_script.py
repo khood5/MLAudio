@@ -77,9 +77,12 @@ NUM_HIDDEN_NEURONS = int(args.hidden_count)
 POP_SIZE = 70
 
 MOA = neuro.MOA()
+seed = 0
 if args.seed is None:
+    seed = random.randint(0,10000000)
     MOA.seed(random.randint(0,10000000), '')
 else:
+    seed = args.seed
     MOA.seed(int(args.seed), '')
 
 NUM_PROCESSES = int(args.num_processes)
@@ -126,6 +129,7 @@ eons_param = {
     "net_params_rate" : mut_weight_values[6]
 }
 print(eons_param)
+print(f'Seed is: {seed}')
 
 proc = risp.Processor(risp_config)
 eons_inst = eons.EONS(eons_param)
@@ -248,6 +252,11 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
         proc.run(PROC_RUN_TIMESTEPS)
 
         vec_0, vec_1 = proc.output_vectors()
+        if labels[i] == 1:
+            print(active_between)
+            print(vec_1)
+            print(vec_0)
+            print('--------------------')
 
         vec_0_count = 0
         for s in vec_0:

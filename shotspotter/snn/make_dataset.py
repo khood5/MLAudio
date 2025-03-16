@@ -10,7 +10,7 @@ import pywt
 
 # stuff required for to_spikes
 DWT_LEVELS = 7
-DWT_TIMESTEPS = 450
+DWT_TIMESTEPS = 1350
 
 SPEC_FREQ_BIN_COUNT = 25
 
@@ -21,7 +21,7 @@ s2s._default_spec_kwargs = {
     "n_fft": 512,
     "f_min": 20,
     "f_max": 4000,
-    "hop_length": 10,
+    "hop_length": 80,
 }
 s2s.transform = torchaudio.transforms.MelSpectrogram(**s2s._default_spec_kwargs)
 
@@ -143,7 +143,7 @@ def to_spikes(paths_list, labels, mode='s2s', need_time_data=True):
             # note that the timestep count will not be exact, timestep skip just approximates to the closest we can get 
             # without missing information at the end
             channels = [[] for i in range(DWT_LEVELS)]
-            for i in range(rate//timestep_skip + 1):
+            for i in range(rate//timestep_skip):
                 for j in range(DWT_LEVELS):
                     channels[j].append(accum[j][i*timestep_skip])
 
