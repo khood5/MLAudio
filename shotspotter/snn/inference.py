@@ -36,7 +36,7 @@ for out_id in network.as_json()['Outputs']:
 
 # load our spikes and labels
 if '.wav' not in args.dataset:
-    _, _, _, _, _, _, test_spikes, test_labels = read_spikes_from_disk(args.dataset)
+    _, _, _, _, _, _, _, test_spikes, test_labels = read_spikes_from_disk(args.dataset)
 else:
     if args.label is None:
         print('Label is required for single sample')

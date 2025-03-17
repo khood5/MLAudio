@@ -109,7 +109,7 @@ eons_param = {
     "merge_rate": 0,
     "population_size": POP_SIZE,
     "multi_edges": 0,
-    "crossover_rate": 0.9,
+    "crossover_rate": 0.1,
     "mutation_rate": float(args.mutation_rate),
     "selection_type": "tournament",
     "tournament_size_factor": 0.1,
@@ -135,7 +135,7 @@ proc = risp.Processor(risp_config)
 eons_inst = eons.EONS(eons_param)
 
 # Read data
-training_spikes, training_labels, training_gunshot_data, validation_spikes, validation_labels, validation_gunshot_data, test_spikes, test_labels = read_spikes_from_disk(args.dataset_path)
+training_spikes, training_labels, training_gunshot_data, validation_spikes, validation_labels, validation_gunshot_data, _, test_spikes, test_labels = read_spikes_from_disk(args.dataset_path)
 
 # set up template network  (inputs and outputs) for eons
 template_net = neuro.Network()
@@ -221,6 +221,11 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
 
     differences = [] # track difference between gunshot and background neurons while gunshot is active
     gunshot_spikes = [] # track how many times gunshot output neuron spiked on background only samples
+
+    # pos and neg refer to gunshot positive samples (gunshot+background) and background only samples
+    gs_pos = []
+    gs_neg = []
+    bg_neg = []
     for i in range(len(spikes)):
         proc.clear_activity()
 
@@ -252,11 +257,6 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
         proc.run(PROC_RUN_TIMESTEPS)
 
         vec_0, vec_1 = proc.output_vectors()
-        if labels[i] == 1:
-            print(active_between)
-            print(vec_1)
-            print(vec_0)
-            print('--------------------')
 
         vec_0_count = 0
         for s in vec_0:
@@ -269,18 +269,17 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
                 vec_1_count += 1
 
         if labels[i] == 1:
-            differences.append(vec_1_count-vec_0_count)
+            gs_pos.append(vec_1_count)
         else:
-            gunshot_spikes.append(len(vec_1))
+            gs_neg.append(vec_1_count)
+            bg_neg.append(vec_0_count)
 
-    
-    # idea here is that the first term pushes our networks towards those that can differentiate between gunshots and noise the most 
-    # while gunshot is happening, in combination with being able to not spike the gunshot neuron as much when only background sounds are happening
-    #print(correct/len(spikes))
-    dif = sum(differences)/len(differences)
-    gs = sum(gunshot_spikes)/len(gunshot_spikes)
+    gs_pos = sum(gs_pos)/len(gs_pos)
+    gs_neg = sum(gs_neg)/len(gs_neg)
+    bg_neg = sum(bg_neg)/len(bg_neg)
 
-    return dif - (1/2)*gs
+    print(f'gs_pos {gs_pos}, gs_neg {gs_neg}, bg_neg {bg_neg}')
+    return gs_pos - gs_neg + bg_neg
 
 def load_network(path):
     loaded_net = neuro.Network()
@@ -371,11 +370,11 @@ for i in range(EPOCH_COUNT):
         with open(args.best_net_path, 'w') as f:
             json.dump(best_net.as_json(), f)
     
-    # also, let's write best network from train set to file
-    # FINISH THIS
-    # print(f'Writing best validation set network to {args.best_net_path}')
-    # with open(args.best_net_path, 'w') as f:
-    #     json.dump(best_net.as_json(), f)
+    #also, let's write best network from train set to file
+    train_net_path = './new-fit/train-best.json'
+    print(f'Writing train set network to {train_net_path}')
+    with open(train_net_path, 'w') as f:
+        json.dump(best_net.as_json(), f)
 
     # let's also save our fitness logs
     with open(args.log_path, 'a') as f:

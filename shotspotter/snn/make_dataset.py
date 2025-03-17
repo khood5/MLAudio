@@ -183,10 +183,11 @@ def to_spikes(paths_list, labels, mode='s2s', need_time_data=True):
     return all_spikes, targets, gunshot_time_data
 
 # make sure path is .npz for consistency
-def write_spikes_to_disk(path, train, train_labels, train_gunshot_data, val, val_labels, val_gunshot_data, test, test_labels):
+def write_spikes_to_disk(path, train, train_labels, train_gunshot_data, val, val_labels, val_gunshot_data,
+val_filenames, test, test_labels):
     np.savez(path, train_set=train, validation_set=val, test_set=test, train_labels=train_labels,
             validation_labels=val_labels, test_labels=test_labels, train_gunshot_data=train_gunshot_data,
-            validation_gunshot_data=val_gunshot_data)
+            validation_gunshot_data=val_gunshot_data, validation_filenames=val_filenames)
 
 if __name__ == '__main__':
 
@@ -236,10 +237,11 @@ if __name__ == '__main__':
     validation_spikes = spikes[train_cutoff_index:train_cutoff_index+test_val_cutoff_offset]
     validation_labels = labels[train_cutoff_index:train_cutoff_index+test_val_cutoff_offset]
     validation_gunshot_data = gunshot_data[train_cutoff_index:train_cutoff_index+test_val_cutoff_offset]
+    validation_filenames = [i[0] for i in pairs][train_cutoff_index:train_cutoff_index+test_val_cutoff_offset]
 
     test_spikes = spikes[train_cutoff_index+test_val_cutoff_offset:]
     test_labels = labels[train_cutoff_index+test_val_cutoff_offset:]
 
     print("Writing to disk...")
     write_spikes_to_disk(args.save_path, training_spikes, training_labels, training_gunshot_data,
-    validation_spikes, validation_labels, validation_gunshot_data, test_spikes, test_labels)
+    validation_spikes, validation_labels, validation_gunshot_data, validation_filenames, test_spikes, test_labels)
