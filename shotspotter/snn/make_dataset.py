@@ -6,11 +6,12 @@ import random
 import numpy as np
 import os
 import pywt
+import noisereduce
 
 
 # stuff required for to_spikes
 DWT_LEVELS = 7
-DWT_TIMESTEPS = 1350
+DWT_TIMESTEPS = 450
 
 SPEC_FREQ_BIN_COUNT = 25
 
@@ -110,13 +111,15 @@ def to_spikes(paths_list, labels, mode='s2s', need_time_data=True):
             if need_time_data:
                 gunshot_time_data.append(get_time_data(p))
 
-            samples, rate = torchaudio.load(p, normalize=False)
+            samples, rate = torchaudio.load(p, normalize=True)
 
             # same procedure as 'samples' mode
             if samples.shape[0] == 2: samples = samples[0, :]
             else: samples = samples[0]
             if(len(samples) < 24000):
                 samples = torch.cat((samples, torch.tensor([0])))
+
+            samples = noisereduce.reduce_noise(y=samples, sr=rate) # testing this because I had it on in the ResNet version dataset
 
             coeffs = pywt.wavedec(samples, 'db1', level=DWT_LEVELS)
 
@@ -132,12 +135,6 @@ def to_spikes(paths_list, labels, mode='s2s', need_time_data=True):
                 r = r[:, 0:rate]
                 accum = np.concatenate([accum, r])
             
-            # min max normalize
-            global_min = accum.min() 
-            global_max = accum.max() 
-
-            accum = (accum-global_min) / (global_max - global_min)
-
             timestep_skip = rate//DWT_TIMESTEPS
 
             # note that the timestep count will not be exact, timestep skip just approximates to the closest we can get 
@@ -149,7 +146,18 @@ def to_spikes(paths_list, labels, mode='s2s', need_time_data=True):
 
             channels = np.array(channels)
             all_spikes.append(channels)
+        
+        # now we find global max and min and normalize using that
+        global_min = 0
+        global_max = 0
+        for s in all_spikes:
+            if s.min() < global_min: global_min = s.min()
+            if s.max() > global_max: global_max = s.max()
 
+        # now normalize everything
+        for i in range(len(all_spikes)):
+            all_spikes[i] = (all_spikes[i]-global_min) / (global_max - global_min)
+        
     elif mode == 'spec':
         all_spikes = []
         targets = np.array(labels)
@@ -158,7 +166,7 @@ def to_spikes(paths_list, labels, mode='s2s', need_time_data=True):
             if need_time_data:
                 gunshot_time_data.append(get_time_data(p))
 
-            samples, rate = torchaudio.load(p, normalize=False)
+            samples, rate = torchaudio.load(p, normalize=True)
 
             # same procedure as 'samples' mode
             if samples.shape[0] == 2: samples = samples[0, :]
@@ -166,19 +174,26 @@ def to_spikes(paths_list, labels, mode='s2s', need_time_data=True):
             if(len(samples) < 24000):
                 samples = torch.cat((samples, torch.tensor([0])))
 
+            samples = torch.tensor(noisereduce.reduce_noise(y=samples, sr=rate)) # testing this because I had it on in the ResNet version dataset
+
             # freq bin count is nfft//2 + 1
             spec_transform = torchaudio.transforms.Spectrogram(n_fft=(2*SPEC_FREQ_BIN_COUNT-2))
 
             samples = samples.to(torch.float64)
             spec = spec_transform(samples)
 
-            # min max normalize
-            global_min = spec.min() 
-            global_max = spec.max() 
-
-            spec = (spec-global_min) / (global_max - global_min)
-
             all_spikes.append(spec)
+
+        # same as dwt
+        global_min = 0
+        global_max = 0
+        for s in all_spikes:
+            if s.min() < global_min: global_min = s.min()
+            if s.max() > global_max: global_max = s.max()
+
+        # now normalize everything
+        for i in range(len(all_spikes)):
+            all_spikes[i] = (all_spikes[i]-global_min) / (global_max - global_min)
 
     return all_spikes, targets, gunshot_time_data
 
