@@ -119,7 +119,7 @@ def to_spikes(paths_list, labels, mode='s2s', need_time_data=True):
             if(len(samples) < 24000):
                 samples = torch.cat((samples, torch.tensor([0])))
 
-            samples = noisereduce.reduce_noise(y=samples, sr=rate) # testing this because I had it on in the ResNet version dataset
+            #samples = noisereduce.reduce_noise(y=samples, sr=rate) # testing this because I had it on in the ResNet version dataset
 
             coeffs = pywt.wavedec(samples, 'db1', level=DWT_LEVELS)
 

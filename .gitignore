@@ -224,3 +224,6 @@ shotspotter/temp
 shotspotter/snn/new-fit
 shotspotter/snn/new-fit-2
 shotspotter/snn/server-runs
+shotspotter/snn/tbest.json
+shotspotter/snn-torch/temp
+shotspotter/snn-torch/data
