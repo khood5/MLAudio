@@ -7,67 +7,62 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import argparse
 import time
+from common import read_spikes_from_disk
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-#
 parser = argparse.ArgumentParser()
 parser.add_argument('-o', '--output', required=True, help='path for log file and model output')
 parser.add_argument('-d', '--dataset', required=True)
-parser.add_argument('-e', '--epochs')
-parser.add_argument('-r', '--learn_rate')
+parser.add_argument('-e', '--epochs', required=True)
+parser.add_argument('-r', '--learn_rate', required=True)
+parser.add_argument('-b', '--batch_size', default=12)
 
 args = parser.parse_args()
 
 OUT_PATH = args.output+'/' if args.output[-1] != '/' else args.output
 EPOCHS = int(args.epochs)
 LEARN_RATE = float(args.learn_rate)
+BATCH_SIZE = args.batch_size
 
 # log settings to output
 with open(OUT_PATH+'details.txt', 'a') as f:
     f.write(f'Dataset filename: {args.dataset}\n')
     f.write(f'Learning Rate: {args.learn_rate}\n')
-
-def read_spikes_from_disk(path):
-    data = np.load(path)
-
-    # compatability with old datasets
-    val_filenames = []
-    if 'validation_filenames' in data:
-        val_filenames = data['validation_filenames']
-
-    return data['train_set'], data['train_labels'], data['train_gunshot_data'], data['validation_set'], data['validation_labels'], data['validation_gunshot_data'], val_filenames, data['test_set'], data['test_labels']
+    f.write(f'Batch size: {args.batch_size}\n')
 
 # load and preprocess dataset
 training_data, training_labels, _, validation_data, validation_labels, _, _, test_data, test_labels = read_spikes_from_disk(args.dataset)
 
+INPUT_NEURON_COUNT = training_data.shape[2]
+
 # temporary function just to convert data from s2s format from make_data.py to snntorch format
-def parse_s2s(d):
-    all_samples = []
-    for sample in d:
-        channels = []
-        for channel in sample:
-            channels.append([])
-            for timestep in channel:
-                channels[-1].append(timestep[2])
-        all_samples.append(channels)
+# def parse_s2s(d):
+#     all_samples = []
+#     for sample in d:
+#         channels = []
+#         for channel in sample:
+#             channels.append([])
+#             for timestep in channel:
+#                 channels[-1].append(timestep[2])
+#         all_samples.append(channels)
 
-    return torch.tensor(all_samples, dtype=torch.float32).permute(2, 0, 1)
+#     return torch.tensor(all_samples, dtype=torch.float32).permute(2, 0, 1)
 
-dm_train_data = parse_s2s(training_data)
-dm_val_data = parse_s2s(validation_data)
+# dm_train_data = parse_s2s(training_data)
+# dm_val_data = parse_s2s(validation_data)
 
 beta = 0.9 # slow decay
-num_timesteps = dm_train_data.shape[0]
+num_timesteps = training_data.shape[0]
 
 class SNN(nn.Module):
     def __init__(self, input_neurons):
         super().__init__()
-        self.fc1 = nn.Linear(input_neurons, 250)
+        self.fc1 = nn.Linear(input_neurons, 150)
         self.lif1 = snn.Leaky(beta=beta)
-        self.fc2 = nn.Linear(250, 250)
+        self.fc2 = nn.Linear(150, 150)
         self.lif2 = snn.Leaky(beta=beta)
-        self.fc3 = nn.Linear(250, 2)
+        self.fc3 = nn.Linear(150, 2)
         self.lif3 = snn.Leaky(beta=beta)
 
     # x will be (timestep x batch x neuron) shape
@@ -113,13 +108,13 @@ def append_log(filename, data):
         f.write(f'{data[0]},{data[1]},{data[2]}\n')
 
 
-ds = SpikesDataset(dm_train_data, torch.tensor(training_labels))
-loader = DataLoader(ds, batch_size=6, shuffle=True)
+ds = SpikesDataset(training_data, torch.tensor(training_labels))
+loader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
 
-ds_val = SpikesDataset(dm_val_data, torch.tensor(validation_labels))
-val_loader = DataLoader(ds_val, batch_size=6, shuffle=True)
+ds_val = SpikesDataset(validation_data, torch.tensor(validation_labels))
+val_loader = DataLoader(ds_val, batch_size=BATCH_SIZE, shuffle=True)
 
-net = SNN(80).to(device)
+net = SNN(INPUT_NEURON_COUNT).to(device)
 
 loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=LEARN_RATE, betas=(0.9, 0.999))
