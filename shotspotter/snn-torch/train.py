@@ -11,6 +11,10 @@ from common import read_spikes_from_disk
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# things to consider
+# maybe delta mod threshold is still too large, spiking data looks very noisy
+# figure out what is wrong with validation calc
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-o', '--output', required=True, help='path for log file and model output')
 parser.add_argument('-d', '--dataset', required=True)
@@ -23,7 +27,7 @@ args = parser.parse_args()
 OUT_PATH = args.output+'/' if args.output[-1] != '/' else args.output
 EPOCHS = int(args.epochs)
 LEARN_RATE = float(args.learn_rate)
-BATCH_SIZE = args.batch_size
+BATCH_SIZE = int(args.batch_size)
 
 # log settings to output
 with open(OUT_PATH+'details.txt', 'a') as f:
