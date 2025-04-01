@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import argparse
 import time
-from common import read_spikes_from_disk
+from common import read_spikes_from_disk, SNN, SpikesDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -59,53 +59,6 @@ INPUT_NEURON_COUNT = training_data.shape[2]
 beta = 0.9 # slow decay
 num_timesteps = training_data.shape[0]
 
-class SNN(nn.Module):
-    def __init__(self, input_neurons):
-        super().__init__()
-        self.fc1 = nn.Linear(input_neurons, 150)
-        self.lif1 = snn.Leaky(beta=beta)
-        self.fc2 = nn.Linear(150, 150)
-        self.lif2 = snn.Leaky(beta=beta)
-        self.fc3 = nn.Linear(150, 2)
-        self.lif3 = snn.Leaky(beta=beta)
-
-    # x will be (timestep x batch x neuron) shape
-    def forward(self, x):
-        mem1 = self.lif1.init_leaky()
-        mem2 = self.lif2.init_leaky()
-        mem3 = self.lif3.init_leaky()
-
-        spikes = []
-        mem_rec = []
-
-        # Note: one timestep is a full pass
-        for step in range(num_timesteps):
-            cur1 = self.fc1(x[step])
-            spk1, mem1 = self.lif1(cur1, mem1)
-            cur2 = self.fc2(spk1)
-            spk2, mem2 = self.lif2(cur2, mem2)
-            cur3 = self.fc3(spk2)
-            spk3, mem3 = self.lif3(cur3, mem3)
-
-            spikes.append(spk3)
-            mem_rec.append(mem3)
-
-        return torch.stack(spikes, dim=0), torch.stack(mem_rec, dim=0)
-
-
-# dataset for batches
-class SpikesDataset(Dataset):
-    def __init__(self, data, labels):
-        self.data = data
-        self.labels = labels
-
-    def __len__(self):
-        return self.data.shape[1]
-
-    def __getitem__(self, index):
-        return self.data[:, index, :], self.labels[index]
-
-
 # data is a row to be appended to the csv of format (train_loss, val_loss, val_accuracy) 
 def append_log(filename, data):
     with open(OUT_PATH+filename, 'a') as f:
@@ -118,7 +71,7 @@ loader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
 ds_val = SpikesDataset(validation_data, torch.tensor(validation_labels))
 val_loader = DataLoader(ds_val, batch_size=BATCH_SIZE, shuffle=True)
 
-net = SNN(INPUT_NEURON_COUNT).to(device)
+net = SNN(INPUT_NEURON_COUNT, beta, num_timesteps).to(device)
 
 loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=LEARN_RATE, betas=(0.9, 0.999))

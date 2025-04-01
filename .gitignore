@@ -227,3 +227,5 @@ shotspotter/snn/server-runs
 shotspotter/snn/tbest.json
 shotspotter/snn-torch/temp
 shotspotter/snn-torch/data
+shotspotter/snn-torch/models
+shotspotter/snn-torch/model
