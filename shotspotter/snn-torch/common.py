@@ -21,11 +21,11 @@ class SNN(nn.Module):
 
         self.num_timesteps = num_timesteps
 
-        self.fc1 = nn.Linear(input_neurons, 150)
+        self.fc1 = nn.Linear(input_neurons, 100)
         self.lif1 = snn.Leaky(beta=beta)
-        self.fc2 = nn.Linear(150, 150)
+        self.fc2 = nn.Linear(100, 100)
         self.lif2 = snn.Leaky(beta=beta)
-        self.fc3 = nn.Linear(150, 2)
+        self.fc3 = nn.Linear(100, 2)
         self.lif3 = snn.Leaky(beta=beta)
 
     # x will be (timestep x batch x neuron) shape

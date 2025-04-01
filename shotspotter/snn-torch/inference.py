@@ -19,7 +19,10 @@ parser.add_argument('-m', '--model', required=True)
 
 args = parser.parse_args()
 
-_, _, _, _, _, _, _, test_data, test_labels = read_spikes_from_disk(args.dataset)
+train_data, train_labels, _, _, _, _, _, test_data, test_labels = read_spikes_from_disk(args.dataset)
+
+#test_data = train_data
+#test_labels = train_labels
 
 snn = SNN(test_data.shape[2], 0.9, test_data.shape[0]).to(device)
 snn.load_state_dict(torch.load(args.model, weights_only=True))
