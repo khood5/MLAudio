@@ -14,6 +14,10 @@ def read_spikes_from_disk(path):
 
     return data['train_set'], data['train_labels'], data['train_gunshot_data'], data['validation_set'], data['validation_labels'], data['validation_gunshot_data'], val_filenames, data['test_set'], data['test_labels']
 
+def write_spikes_to_disk(path, metadata, train, train_labels, train_gunshot_data, val, val_labels, val_gunshot_data, val_filenames, test, test_labels):
+    np.savez(path, metadata=metadata, train_set=train, validation_set=val, test_set=test, train_labels=train_labels,
+            validation_labels=val_labels, test_labels=test_labels, train_gunshot_data=train_gunshot_data,
+            validation_gunshot_data=val_gunshot_data, validation_filenames=val_filenames)
 
 class SNN(nn.Module):
     def __init__(self, input_neurons, beta, num_timesteps):
