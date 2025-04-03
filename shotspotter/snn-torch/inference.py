@@ -21,22 +21,25 @@ args = parser.parse_args()
 
 train_data, train_labels, _, _, _, _, _, test_data, test_labels = read_spikes_from_disk(args.dataset)
 
-#test_data = train_data
-#test_labels = train_labels
+test_data = train_data
+test_labels = train_labels
 
 snn = SNN(test_data.shape[2], 0.9, test_data.shape[0]).to(device)
-snn.load_state_dict(torch.load(args.model, weights_only=True))
+snn.load_state_dict(torch.load(args.model, weights_only=True, map_location='cuda:0'))
 snn.eval()
 
 ds = SpikesDataset(test_data, torch.tensor(test_labels))
-loader = DataLoader(ds, batch_size=12, shuffle=True)
+loader = DataLoader(ds, batch_size=100, shuffle=True)
 
 t0 = time.time()
+wrong_indexes = []
+fp, fn = 0, 0
 with torch.no_grad():
     correct = 0
-    for data, labels in loader:
+    for data, labels, index in loader:
         data = data.to(device)
         labels = labels.to(device)
+        index = index.to(device)
         
         data = data.permute(1, 0, 2)
 
@@ -46,5 +49,16 @@ with torch.no_grad():
         v, ind = spk_rec.sum(dim=0).max(1)
         correct += (labels == ind).sum()
 
+        # fp and fn
+        fp += ((labels != ind) & (labels == 0)).sum()
+        fn += ((labels != ind) & (labels == 1)).sum()
+
+        # get indexes of incorrect classifications
+        for w in index[labels != ind]:
+            wrong_indexes.append(int(w))
+    
+
+print(f'Indexes of wrong samples', wrong_indexes)
 print(f'Inference took: {time.time()-t0:.2f} seconds')
-print(f'Accuracy: {100*(correct/len(ds)):.2f}')
+print(f'Accuracy: {100*(correct/len(ds)):.2f} ({correct}/{len(ds)})')
+print(f'FN: {fn}, FP: {fp} (of {len(ds)-correct} incorrect classifications)')

@@ -145,18 +145,21 @@ def to_spikes(paths_list, labels, mode='s2s', need_time_data=True):
                     channels[j].append(accum[j][i*timestep_skip])
 
             channels = np.array(channels)
+
+            channels = (channels - channels.min()) / (channels.max()-channels.min())
+
             all_spikes.append(channels)
         
         # now we find global max and min and normalize using that
-        global_min = 0
-        global_max = 0
-        for s in all_spikes:
-            if s.min() < global_min: global_min = s.min()
-            if s.max() > global_max: global_max = s.max()
+        # global_min = 0
+        # global_max = 0
+        # for s in all_spikes:
+        #     if s.min() < global_min: global_min = s.min()
+        #     if s.max() > global_max: global_max = s.max()
 
-        # now normalize everything
-        for i in range(len(all_spikes)):
-            all_spikes[i] = (all_spikes[i]-global_min) / (global_max - global_min)
+        # # now normalize everything
+        # for i in range(len(all_spikes)):
+        #     all_spikes[i] = (all_spikes[i]-global_min) / (global_max - global_min)
         
     elif mode == 'spec':
         all_spikes = []
@@ -182,9 +185,15 @@ def to_spikes(paths_list, labels, mode='s2s', need_time_data=True):
             samples = samples.to(torch.float64)
             spec = spec_transform(samples)
 
+            # per sample normalize
+            
+            #spec = torch.log10(spec+1e-6) # log to compress scale
+            
+            #spec = (spec - spec.min()) / (spec.max() - spec.min())
+
             all_spikes.append(spec)
 
-        # same as dwt
+        #GLOBAL NORMALIZATION
         global_min = 0
         global_max = 0
         for s in all_spikes:
