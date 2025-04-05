@@ -19,7 +19,9 @@ def read_spikes_from_disk(path):
     if 'validation_filenames' in data:
         val_filenames = data['validation_filenames']
 
-    return data['train_set'], data['train_labels'], data['train_gunshot_data'], data['validation_set'], data['validation_labels'], data['validation_gunshot_data'], val_filenames, data['test_set'], data['test_labels']
+    if len(data) == 9:
+        return data['train_set'], data['train_labels'], data['train_gunshot_data'], data['validation_set'], data['validation_labels'], data['validation_gunshot_data'], val_filenames, data['test_set'], data['test_labels']
+    return data['metadata'], data['train_set'], data['train_labels'], data['train_gunshot_data'], data['validation_set'], data['validation_labels'], data['validation_gunshot_data'], val_filenames, data['test_set'], data['test_labels']
 
 def network_details(nw, log_json=False):
     net_json = nw.as_json()
