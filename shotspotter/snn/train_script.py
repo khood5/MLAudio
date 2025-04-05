@@ -37,7 +37,7 @@ parser.add_argument('--edge_mutations', default='0.65/0.35', required=False,
     help='2 \'/\' separated values for edge mutations eons param, order is: weight, delay')
 parser.add_argument('--inject', required=False,
     help='Path to JSON file of network to inject into population')
-parser.add_argument('--mode', default='s2s', choices=['s2s', 'samples', 'dwt', 'spec'], required=False)
+parser.add_argument('--mode', default='s2s', choices=['s2s', 'samples', 'dwt', 'spec', 'dwt-pndm'], required=False)
 parser.add_argument('--proc_timesteps', default='1000', required=False)
 parser.add_argument('--seed', required=False)
 
@@ -70,11 +70,13 @@ elif MODE == 'dwt':
     NUM_INPUT_NEURONS = 7
 elif MODE == 'spec':
     NUM_INPUT_NEURONS = SPEC_FREQ_BIN_COUNT
+elif MODE == 'dwt-pndm':
+    NUM_INPUT_NEURONS = 34
 
 NUM_OUTPUT_NEURONS = 2
 NUM_SYNAPSES = int(args.synapse_count)
 NUM_HIDDEN_NEURONS = int(args.hidden_count)
-POP_SIZE = 70
+POP_SIZE = 10
 
 MOA = neuro.MOA()
 seed = 0
@@ -135,7 +137,7 @@ proc = risp.Processor(risp_config)
 eons_inst = eons.EONS(eons_param)
 
 # Read data
-training_spikes, training_labels, training_gunshot_data, validation_spikes, validation_labels, validation_gunshot_data, _, test_spikes, test_labels = read_spikes_from_disk(args.dataset_path)
+metadata, training_spikes, training_labels, training_gunshot_data, validation_spikes, validation_labels, validation_gunshot_data, _, test_spikes, test_labels = read_spikes_from_disk(args.dataset_path)
 
 # set up template network  (inputs and outputs) for eons
 template_net = neuro.Network()
@@ -211,6 +213,16 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
 
                     for k in range(shared_spikes_arr.shape[2]):
                         rec_spikes[i][j].append(neuro.Spike(j, k, shared_spikes_arr[i][j][k]))
+        
+        elif MODE == 'dwt-pndm':
+            # shape will be timesteps x batch x neuron (from ../snn-torch/create-dataset.ipynb)
+
+            for i in range(shared_spikes_arr.shape[1]): # sample
+                rec_spikes.append([])
+                for j in range(shared_spikes_arr.shape[2]): # channel
+                    rec_spikes[i].append([])
+                    for k in range(shared_spikes_arr.shape[0]): # timestep
+                        rec_spikes[i][j].append(neuro.Spike(j, k, shared_spikes_arr[k][i][j]))
 
 
         spikes = rec_spikes
@@ -233,52 +245,52 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
         proc.track_output_events(0)
         proc.track_output_events(1)
 
-        if MODE == 's2s' or MODE == 'dwt' or MODE == 'spec':
+        if MODE == 's2s' or MODE == 'dwt' or MODE == 'spec' or MODE == 'dwt-pndm':
             for c in spikes[i]: # spikes[i] is a single training sample
                 proc.apply_spikes(c)
         elif MODE == 'samples':
             proc.apply_spikes(spikes[i])
 
-        # translation from time (0-2s) to timesteps
-        if labels[i] == 1:
-            secs_per_timestep = 2 / timesteps_from_data
-            active_between = gunshot_data[i] / secs_per_timestep # timesteps of input where gunshot audio is active
+        # # translation from time (0-2s) to timesteps
+        # if labels[i] == 1:
+        #     secs_per_timestep = 2 / timesteps_from_data
+        #     active_between = gunshot_data[i] / secs_per_timestep # timesteps of input where gunshot audio is active
 
-            # I am pretty sure that all gunshots start at a point, then go until/beyond the end of 2s in every scenario
-            # due to how data is generated
-            active_between[1] = timesteps_from_data
+        #     # I am pretty sure that all gunshots start at a point, then go until/beyond the end of 2s in every scenario
+        #     # due to how data is generated
+        #     active_between[1] = timesteps_from_data
 
-            active_between[1] = PROC_RUN_TIMESTEPS # TEMPORARY TEST, just consider when gunshot start so we get more bouncing around
+        #     active_between[1] = PROC_RUN_TIMESTEPS # TEMPORARY TEST, just consider when gunshot start so we get more bouncing around
 
-            active_between = active_between.astype(np.int64)
-        else:
-            active_between = [0, PROC_RUN_TIMESTEPS]
+        #     active_between = active_between.astype(np.int64)
+        # else:
+        #     active_between = [0, PROC_RUN_TIMESTEPS]
 
         proc.run(PROC_RUN_TIMESTEPS)
 
-        vec_0, vec_1 = proc.output_vectors()
+        c0, c1 = proc.output_counts()
 
-        vec_0_count = 0
-        for s in vec_0:
-            if s >= active_between[0] and s <= active_between[1]:
-                vec_0_count += 1
+        # vec_0_count = 0
+        # for s in vec_0:
+        #     if s >= active_between[0] and s <= active_between[1]:
+        #         vec_0_count += 1
 
-        vec_1_count = 0
-        for s in vec_1:
-            if s >= active_between[0] and s <= active_between[1]:
-                vec_1_count += 1
+        # vec_1_count = 0
+        # for s in vec_1:
+        #     if s >= active_between[0] and s <= active_between[1]:
+        #         vec_1_count += 1
 
         if labels[i] == 1:
-            gs_pos.append(vec_1_count)
+            gs_pos.append(c1)
         else:
-            gs_neg.append(vec_1_count)
-            bg_neg.append(vec_0_count)
+            gs_neg.append(c1)
+            bg_neg.append(c0)
 
     gs_pos = sum(gs_pos)/len(gs_pos)
     gs_neg = sum(gs_neg)/len(gs_neg)
     bg_neg = sum(bg_neg)/len(bg_neg)
 
-    print(f'gs_pos {gs_pos}, gs_neg {gs_neg}, bg_neg {bg_neg}')
+    #print(f'gs_pos {gs_pos}, gs_neg {gs_neg}, bg_neg {bg_neg}')
     return gs_pos - gs_neg + bg_neg
 
 def load_network(path):
@@ -345,8 +357,6 @@ for i in range(EPOCH_COUNT):
         fits = p.map(compute_fitness_partial, 
                     [n.network for n in pop.networks])
 
-    print(fits)
-
     best_fit_log.append(max(fits))
     pop_fit_log.append((sum(fits)/len(fits)))
 
@@ -370,11 +380,11 @@ for i in range(EPOCH_COUNT):
         with open(args.best_net_path, 'w') as f:
             json.dump(best_net.as_json(), f)
     
-    #also, let's write best network from train set to file
-    train_net_path = './new-fit/train-best.json'
-    print(f'Writing train set network to {train_net_path}')
-    with open(train_net_path, 'w') as f:
-        json.dump(best_net.as_json(), f)
+    # #also, let's write best network from train set to file
+    # train_net_path = './new-fit/train-best.json'
+    # print(f'Writing train set network to {train_net_path}')
+    # with open(train_net_path, 'w') as f:
+    #     json.dump(best_net.as_json(), f)
 
     # let's also save our fitness logs
     with open(args.log_path, 'a') as f:
