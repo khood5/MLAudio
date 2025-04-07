@@ -25,11 +25,11 @@ class SNN(nn.Module):
 
         self.num_timesteps = num_timesteps
 
-        self.fc1 = nn.Linear(input_neurons, 100)
+        self.fc1 = nn.Linear(input_neurons, 800)
         self.lif1 = snn.Leaky(beta=beta)
-        self.fc2 = nn.Linear(100, 100)
+        self.fc2 = nn.Linear(800, 800)
         self.lif2 = snn.Leaky(beta=beta)
-        self.fc3 = nn.Linear(100, 2)
+        self.fc3 = nn.Linear(800, 2)
         self.lif3 = snn.Leaky(beta=beta)
 
     # x will be (timestep x batch x neuron) shape
@@ -55,15 +55,83 @@ class SNN(nn.Module):
 
         return torch.stack(spikes, dim=0), torch.stack(mem_rec, dim=0)
 
+# see https://snntorch.readthedocs.io/en/latest/snn.neurons_sconvlstm.html
+class ConvLSTMSNN(nn.Module):
+    def __init__(self, beta, threshold):
+        super().__init__()
+
+        in_channels = 1
+        out_channels = 32
+        kernel_size = 3
+        max_pool = 2
+        avg_pool = 2
+        flattened_input = 3072
+        num_outputs = 2
+        beta = 0.9
+
+        spike_grad_lstm = snn.surrogate.straight_through_estimator()
+        spike_grad_fc = snn.surrogate.fast_sigmoid(slope=5)
+
+        # initialize layers
+        self.sclstm1 = snn.SConv2dLSTM(
+            in_channels,
+            out_channels,
+            kernel_size,
+            max_pool=max_pool,
+            spike_grad=spike_grad_lstm,
+            threshold=threshold
+        )
+        self.sclstm2 = snn.SConv2dLSTM(
+            out_channels,
+            out_channels,
+            kernel_size,
+            avg_pool=avg_pool,
+            spike_grad=spike_grad_lstm,
+            threshold=threshold
+        )
+        self.fc1 = nn.Linear(flattened_input, num_outputs)
+        self.lif1 = snn.Leaky(beta=beta, spike_grad=spike_grad_fc)
+
+    def forward(self, x):
+        # Initialize hidden states and outputs at t=0
+        syn1, mem1 = self.sclstm1.reset_mem()
+        syn2, mem2 = self.sclstm2.reset_mem()
+        mem3 = self.lif1.init_leaky()
+
+        # Record the final layer
+        spk3_rec = []
+        mem3_rec = []
+
+        # Number of steps assuming x is [N, T, C, H, W] with
+        # N = Batches, T = Time steps, C = Channels,
+        # H = Height, W = Width
+        num_steps = x.size()[1]
+
+        for step in range(num_steps):
+            x_step = x[:, step, :, :, :]
+            spk1, syn1, mem1 = self.sclstm1(x_step, syn1, mem1)
+            spk2, syn2, mem2 = self.sclstm2(spk1, syn2, mem2)
+            cur = self.fc1(spk2.flatten(1))
+            spk3, mem3 = self.lif1(cur, mem3)
+
+            spk3_rec.append(spk3)
+            mem3_rec.append(mem3)
+
+        return torch.stack(spk3_rec), torch.stack(mem3_rec)
 
 # dataset for batches
 class SpikesDataset(Dataset):
-    def __init__(self, data, labels):
+    def __init__(self, data, labels, conv=False):
         self.data = data
         self.labels = labels
+        self.isConv = conv
 
     def __len__(self):
-        return self.data.shape[1]
+        if self.isConv == False:
+            return self.data.shape[1]
+        return self.data.shape[0]
 
     def __getitem__(self, index):
-        return self.data[:, index, :], self.labels[index], index
+        if self.isConv == False:
+            return self.data[:, index, :], self.labels[index], index
+        return self.data[index, :, :, :, :], self.labels[index], index
