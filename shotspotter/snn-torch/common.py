@@ -65,7 +65,7 @@ class ConvLSTMSNN(nn.Module):
         kernel_size = 3
         max_pool = 2
         avg_pool = 2
-        flattened_input = 3072
+        flattened_input = 768
         num_outputs = 2
         beta = 0.9
 
@@ -74,33 +74,45 @@ class ConvLSTMSNN(nn.Module):
 
         # initialize layers
         self.sclstm1 = snn.SConv2dLSTM(
-            in_channels,
-            out_channels,
-            kernel_size,
+            1,
+            8,
+            5,
             max_pool=max_pool,
             spike_grad=spike_grad_lstm,
             threshold=threshold
         )
         self.sclstm2 = snn.SConv2dLSTM(
-            out_channels,
-            out_channels,
-            kernel_size,
+            8,
+            16,
+            3,
             avg_pool=avg_pool,
             spike_grad=spike_grad_lstm,
             threshold=threshold
         )
-        self.fc1 = nn.Linear(flattened_input, num_outputs)
+        self.sclstm3 = snn.SConv2dLSTM(
+            16,
+            32,
+            3,
+            avg_pool=avg_pool,
+            spike_grad=spike_grad_lstm,
+            threshold=threshold
+        )
+        self.fc1 = nn.Linear(flattened_input, 128)
         self.lif1 = snn.Leaky(beta=beta, spike_grad=spike_grad_fc)
+        self.fc2 = nn.Linear(128, num_outputs)
+        self.lif2 = snn.Leaky(beta=beta, spike_grad=spike_grad_fc)
 
     def forward(self, x):
         # Initialize hidden states and outputs at t=0
         syn1, mem1 = self.sclstm1.reset_mem()
         syn2, mem2 = self.sclstm2.reset_mem()
-        mem3 = self.lif1.init_leaky()
+        syn3, mem3 = self.sclstm3.reset_mem()
+        mem4 = self.lif1.init_leaky()
+        mem5 = self.lif2.init_leaky()
 
         # Record the final layer
-        spk3_rec = []
-        mem3_rec = []
+        spk5_rec = []
+        mem5_rec = []
 
         # Number of steps assuming x is [N, T, C, H, W] with
         # N = Batches, T = Time steps, C = Channels,
@@ -111,13 +123,16 @@ class ConvLSTMSNN(nn.Module):
             x_step = x[:, step, :, :, :]
             spk1, syn1, mem1 = self.sclstm1(x_step, syn1, mem1)
             spk2, syn2, mem2 = self.sclstm2(spk1, syn2, mem2)
-            cur = self.fc1(spk2.flatten(1))
-            spk3, mem3 = self.lif1(cur, mem3)
+            spk3, syn3, mem3 = self.sclstm3(spk2, syn3, mem3)
+            cur = self.fc1(spk3.flatten(1))
+            spk4, mem4 = self.lif1(cur, mem4)
+            cur2 = self.fc2(spk4)
+            spk5, mem5 = self.lif2(cur2, mem5)
 
-            spk3_rec.append(spk3)
-            mem3_rec.append(mem3)
+            spk5_rec.append(spk5)
+            mem5_rec.append(mem5)
 
-        return torch.stack(spk3_rec), torch.stack(mem3_rec)
+        return torch.stack(spk5_rec), torch.stack(mem5_rec)
 
 # dataset for batches
 class SpikesDataset(Dataset):

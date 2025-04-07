@@ -50,7 +50,7 @@ loader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
 ds_val = SpikesDataset(validation_data, torch.tensor(validation_labels), True)
 val_loader = DataLoader(ds_val, batch_size=BATCH_SIZE, shuffle=True)
 
-net = ConvLSTMSNN(beta, 0.1).to(device)
+net = ConvLSTMSNN(beta, 0.5).to(device)
 
 loss = SF.ce_rate_loss()
 optimizer = torch.optim.Adam(net.parameters(), lr=LEARN_RATE, betas=(0.9, 0.999))
