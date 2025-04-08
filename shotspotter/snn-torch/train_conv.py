@@ -50,7 +50,7 @@ loader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=True)
 ds_val = SpikesDataset(validation_data, torch.tensor(validation_labels), True)
 val_loader = DataLoader(ds_val, batch_size=BATCH_SIZE, shuffle=True)
 
-net = ConvLSTMSNN(beta, 0.5).to(device)
+net = ConvLSTMSNN(beta, torch.tensor(0.17, dtype=torch.float32, requires_grad=True)).to(device)
 
 loss = SF.ce_rate_loss()
 optimizer = torch.optim.Adam(net.parameters(), lr=LEARN_RATE, betas=(0.9, 0.999))
@@ -113,6 +113,8 @@ for i in range(EPOCHS):
         if len(val_accuracy_log) == 1 or val_accuracy_log[-1] > max(val_accuracy_log[:-1]):
             print('New best validation accuracy, writing to disk...')
             torch.save(net.state_dict(), OUT_PATH+'model.pth')
+
+        torch.save(net.state_dict(), OUT_PATH+'model_recent.pth')
 
         print(f'Took {time.time()-t0:.2f} seconds')
         print('-----')

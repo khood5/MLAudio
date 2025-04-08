@@ -65,7 +65,7 @@ class ConvLSTMSNN(nn.Module):
         kernel_size = 3
         max_pool = 2
         avg_pool = 2
-        flattened_input = 768
+        flattened_input = 1536
         num_outputs = 2
         beta = 0.9
 
@@ -75,27 +75,30 @@ class ConvLSTMSNN(nn.Module):
         # initialize layers
         self.sclstm1 = snn.SConv2dLSTM(
             1,
-            8,
+            16,
             5,
             max_pool=max_pool,
             spike_grad=spike_grad_lstm,
-            threshold=threshold
+            threshold=threshold,
+            learn_threshold=False
         )
         self.sclstm2 = snn.SConv2dLSTM(
-            8,
-            16,
-            3,
-            avg_pool=avg_pool,
-            spike_grad=spike_grad_lstm,
-            threshold=threshold
-        )
-        self.sclstm3 = snn.SConv2dLSTM(
             16,
             32,
             3,
             avg_pool=avg_pool,
             spike_grad=spike_grad_lstm,
-            threshold=threshold
+            threshold=threshold,
+            learn_threshold=False
+        )
+        self.sclstm3 = snn.SConv2dLSTM(
+            32,
+            64,
+            3,
+            avg_pool=avg_pool,
+            spike_grad=spike_grad_lstm,
+            threshold=threshold,
+            learn_threshold=False
         )
         self.fc1 = nn.Linear(flattened_input, 128)
         self.lif1 = snn.Leaky(beta=beta, spike_grad=spike_grad_fc)
