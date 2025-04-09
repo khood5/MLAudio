@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import argparse
 import time
-from common import read_spikes_from_disk, SNN, SpikesDataset
+from common import read_spikes_from_disk, SNN, SpikesDataset, ConvLSTMSNN
 import time
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -16,19 +16,29 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('-d', '--dataset', required=True)
 parser.add_argument('-m', '--model', required=True)
+parser.add_argument('-t', '--type', choices=['fc', 'conv'], required=True)
+parser.add_argument('-s', '--set', choices=['train', 'test'], required=True)
+parser.add_argument('-b', '--beta', required=True)
 
 args = parser.parse_args()
 
 train_data, train_labels, _, _, _, _, _, test_data, test_labels = read_spikes_from_disk(args.dataset)
 
-test_data = train_data
-test_labels = train_labels
+BETA = float(args.beta)
 
-snn = SNN(test_data.shape[2], 0.9, test_data.shape[0]).to(device)
+if args.set == 'train':
+    test_data = train_data
+    test_labels = train_labels
+
+if args.type == 'fc':
+    snn = SNN(test_data.shape[2], BETA, test_data.shape[0]).to(device)
+else:
+    snn = ConvLSTMSNN(BETA, torch.tensor(0.17, dtype=torch.float32, requires_grad=True)).to(device)
+
 snn.load_state_dict(torch.load(args.model, weights_only=True, map_location='cuda:0'))
 snn.eval()
 
-ds = SpikesDataset(test_data, torch.tensor(test_labels))
+ds = SpikesDataset(test_data, torch.tensor(test_labels), False if args.type == 'fc' else True)
 loader = DataLoader(ds, batch_size=100, shuffle=True)
 
 t0 = time.time()
@@ -41,7 +51,8 @@ with torch.no_grad():
         labels = labels.to(device)
         index = index.to(device)
         
-        data = data.permute(1, 0, 2)
+        if args.type == 'fc':
+            data = data.permute(1, 0, 2)
 
         spk_rec, mem_rec = snn(data)
         
@@ -56,6 +67,14 @@ with torch.no_grad():
         # get indexes of incorrect classifications
         for w in index[labels != ind]:
             wrong_indexes.append(int(w))
+        
+        # debug stuff
+        total_spikes = spk_rec.sum(dim=0)
+
+        k = 0
+        for total in total_spikes:
+            print(f'{total[0].item()}, {total[1].item()} - actual: {labels[k]}', 'WRONG' if ind[k] != labels[k] else '')
+            k += 1
     
 
 print(f'Indexes of wrong samples', wrong_indexes)
