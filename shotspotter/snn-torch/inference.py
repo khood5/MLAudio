@@ -9,6 +9,7 @@ import argparse
 import time
 from common import read_spikes_from_disk, SNN, SpikesDataset, ConvLSTMSNN
 import time
+from power import watt_now
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -19,6 +20,7 @@ parser.add_argument('-m', '--model', required=True)
 parser.add_argument('-t', '--type', choices=['fc', 'conv'], required=True)
 parser.add_argument('-s', '--set', choices=['train', 'test'], required=True)
 parser.add_argument('-b', '--beta', required=True)
+parser.add_argument('-p', '--power', action='store_true')
 
 args = parser.parse_args()
 
@@ -40,6 +42,19 @@ snn.eval()
 
 ds = SpikesDataset(test_data, torch.tensor(test_labels), False if args.type == 'fc' else True)
 loader = DataLoader(ds, batch_size=100, shuffle=True)
+
+# thread for power stuff
+stop = threading.Event()
+def record_consumption():
+    while not stop.is_set():
+        with open(args.out_path, 'a') as f:
+            f.write(f'{watt_now()}\n')
+
+        time.sleep(0.005)
+
+thr = threading.Thread(target=record_consumption)
+
+if args.power: thr.start()
 
 t0 = time.time()
 wrong_indexes = []
@@ -75,7 +90,9 @@ with torch.no_grad():
         for total in total_spikes:
             print(f'{total[0].item()}, {total[1].item()} - actual: {labels[k]}', 'WRONG' if ind[k] != labels[k] else '')
             k += 1
-    
+
+stop.set()
+thr.join()
 
 print(f'Indexes of wrong samples', wrong_indexes)
 print(f'Inference took: {time.time()-t0:.2f} seconds')
