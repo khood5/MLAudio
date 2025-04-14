@@ -139,6 +139,9 @@ eons_inst = eons.EONS(eons_param)
 # Read data
 metadata, training_spikes, training_labels, training_gunshot_data, validation_spikes, validation_labels, validation_gunshot_data, _, test_spikes, test_labels = read_spikes_from_disk(args.dataset_path)
 
+# uncomment this and comment above if no metadata
+# training_spikes, training_labels, training_gunshot_data, validation_spikes, validation_labels, validation_gunshot_data, _, test_spikes, test_labels = read_spikes_from_disk(args.dataset_path)
+
 # set up template network  (inputs and outputs) for eons
 template_net = neuro.Network()
 template_net.set_properties(proc.get_network_properties())
@@ -222,7 +225,8 @@ def compute_fitness(net, spikes_shm_name, labels, spikes_shm_dtype, spikes_shm_s
                 for j in range(shared_spikes_arr.shape[2]): # channel
                     rec_spikes[i].append([])
                     for k in range(shared_spikes_arr.shape[0]): # timestep
-                        rec_spikes[i][j].append(neuro.Spike(j, k, shared_spikes_arr[k][i][j]))
+                        if shared_spikes_arr[k][i][j] == 1:
+                            rec_spikes[i][j].append(neuro.Spike(j, k, shared_spikes_arr[k][i][j]))
 
 
         spikes = rec_spikes
