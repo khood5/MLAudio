@@ -51,7 +51,7 @@ def record_consumption():
         with open(args.out_path, 'a') as f:
             f.write(f'{watt_now()}\n')
 
-        time.sleep(0.005)
+        time.sleep(3)
 
 thr = threading.Thread(target=record_consumption)
 
