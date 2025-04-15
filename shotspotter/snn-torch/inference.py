@@ -10,6 +10,7 @@ import time
 from common import read_spikes_from_disk, SNN, SpikesDataset, ConvLSTMSNN
 import time
 from power import watt_now
+import threading
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -56,9 +57,12 @@ thr = threading.Thread(target=record_consumption)
 
 if args.power: thr.start()
 
+print('Starting inference...')
+
 t0 = time.time()
 wrong_indexes = []
 fp, fn = 0, 0
+tp, tn = 0, 0
 with torch.no_grad():
     correct = 0
     for data, labels, index in loader:
@@ -78,6 +82,8 @@ with torch.no_grad():
         # fp and fn
         fp += ((labels != ind) & (labels == 0)).sum()
         fn += ((labels != ind) & (labels == 1)).sum()
+        tp += ((labels == ind) & (labels == 1)).sum()
+        tn += ((labels == ind) & (labels == 0)).sum()
 
         # get indexes of incorrect classifications
         for w in index[labels != ind]:
@@ -86,15 +92,17 @@ with torch.no_grad():
         # debug stuff
         total_spikes = spk_rec.sum(dim=0)
 
-        k = 0
-        for total in total_spikes:
-            print(f'{total[0].item()}, {total[1].item()} - actual: {labels[k]}', 'WRONG' if ind[k] != labels[k] else '')
-            k += 1
+        #k = 0
+        #for total in total_spikes:
+        #    print(f'{total[0].item()}, {total[1].item()} - actual: {labels[k]}', 'WRONG' if ind[k] != labels[k] else '')
+        #    k += 1
 
 stop.set()
-thr.join()
+if args.power: thr.join()
 
 print(f'Indexes of wrong samples', wrong_indexes)
 print(f'Inference took: {time.time()-t0:.2f} seconds')
 print(f'Accuracy: {100*(correct/len(ds)):.2f} ({correct}/{len(ds)})')
 print(f'FN: {fn}, FP: {fp} (of {len(ds)-correct} incorrect classifications)')
+print(f'TN: {tn}, TP: {tp} (of {correct} correct classifications)')
+print(f'\nTrainable parameter count: {sum(p.numel() for p in snn.parameters())}')
