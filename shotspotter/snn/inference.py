@@ -12,7 +12,7 @@ import numpy as np
 parser = argparse.ArgumentParser()
 parser.add_argument('-p', '--dataset', required=True, help='if dataset path ends in .wav, then read in a single sample for inference (debugging)')
 parser.add_argument('-n', '--network', required=True)
-parser.add_argument('-m', '--mode', required=True, choices=['s2s', 'samples', 'dwt'])
+parser.add_argument('-m', '--mode', required=True, choices=['s2s', 'samples', 'dwt', 'dwt-pndm'])
 parser.add_argument('--out_path', required=True)
 parser.add_argument('-l', '--label', required=False, help='label for single sample, required if -p/--dataset is a single sample')
 parser.add_argument('-t', '--threshold', required=True, help='threshold value to identify gunshot positive samples, should have been computed using validation set.')
@@ -92,6 +92,17 @@ def compute_fitness(spikes, labels, reconstruct_spikes=False):
                         #print(f'Creating Spike({j}, {k}, {shared_spikes_arr[i][j][k]})')
                         rec_spikes[i][j].append(neuro.Spike(j, k, spikes[i][j][k]))
 
+        elif MODE == 'dwt-pndm':
+            # shape will be timesteps x batch x neuron (from ../snn-torch/create-dataset.ipynb)
+
+            for i in range(spikes.shape[1]): # sample
+                rec_spikes.append([])
+                for j in range(spikes.shape[2]): # channel
+                    rec_spikes[i].append([])
+                    for k in range(spikes.shape[0]): # timestep
+                        if spikes[k][i][j]:
+                            rec_spikes[i][j].append(neuro.Spike(j, k, spikes[k][i][j]))
+
         spikes = rec_spikes
 
     timesteps_from_data = len(spikes[0][0]) if MODE != 'samples' else 24000
@@ -125,15 +136,18 @@ thr.join()
 
 correct = 0
 fn, fp = 0, 0
+tn, tp = 0, 0
 total = len(test_fit)
 
 for i in range(total):
     if test_fit[i][0] == 1 and test_fit[i][1] > THRESHOLD:
         correct += 1
+        tp += 1
     elif test_fit[i][0] == 1 and test_fit[i][1] <= THRESHOLD:
         fn += 1
     elif test_fit[i][0] == 0 and test_fit[i][1] <= THRESHOLD:
         correct += 1
+        tn += 1
     elif test_fit[i][0] == 0 and test_fit[i][1] > THRESHOLD:
         fp += 1
 
@@ -144,3 +158,5 @@ print(f'Inference took {time.time()-t0:.2f} seconds')
 print(f'{correct/total:.3f} accuracy {correct} out of {total}')
 print(f'False positive count: {fp}')
 print(f'False negative count: {fn}')
+print(f'True positive count: {tp}')
+print(f'True negative count: {tn}')
